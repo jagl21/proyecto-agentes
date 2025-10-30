@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\workplace\\proyecto-agentes\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''C:\\workplace\\proyecto-agentes'' -Force | Select-Object Name, Mode\")",
+      "Bash(powershell:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
