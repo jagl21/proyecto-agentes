@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - News Portal</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <h1 class="logo">News Portal - Admin</h1>
+                    <p class="tagline">Panel de administración y revisión de contenidos</p>
+                </div>
+                <nav class="admin-nav">
+                    <a href="admin.html" class="nav-link active">Posts Pendientes</a>
+                    <a href="index.html" class="nav-link">Ver Sitio Público</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Stats Bar -->
+            <div id="stats-bar" class="stats-bar hidden">
+                <div class="stat-item">
+                    <span class="stat-label">Total Pendientes:</span>
+                    <span class="stat-value" id="total-pending">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Para Revisar:</span>
+                    <span class="stat-value pending" id="pending-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Última actualización:</span>
+                    <span class="stat-value" id="last-updated"></span>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button class="tab-button active" data-status="pending">
+                    Pendientes
+                    <span class="badge" id="badge-pending">0</span>
+                </button>
+                <button class="tab-button" data-status="all">
+                    Todos
+                    <span class="badge" id="badge-all">0</span>
+                </button>
+                <button class="tab-button" data-status="approved">
+                    Aprobados
+                    <span class="badge" id="badge-approved">0</span>
+                </button>
+                <button class="tab-button" data-status="rejected">
+                    Rechazados
+                    <span class="badge" id="badge-rejected">0</span>
+                </button>
+            </div>
+
+            <!-- Loading indicator -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Cargando posts pendientes...</p>
+            </div>
+
+            <!-- Error message -->
+            <div id="error" class="error hidden">
+                <p id="error-message"></p>
+                <button id="retry-button" class="btn-retry">Reintentar</button>
+            </div>
+
+            <!-- Pending Posts Grid -->
+            <div id="pending-posts-container" class="admin-posts-grid">
+                <!-- Pending posts will be dynamically inserted here -->
+            </div>
+
+            <!-- Empty state -->
+            <div id="empty-state" class="empty-state hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <h2>No hay posts pendientes de revisión</h2>
+                <p>Todos los posts han sido procesados. Ejecuta el agente IA para generar nuevos contenidos.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Post</h2>
+                <button class="modal-close" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form">
+                    <input type="hidden" id="edit-post-id">
+
+                    <div class="form-group">
+                        <label for="edit-title">Título</label>
+                        <input type="text" id="edit-title" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-summary">Resumen</label>
+                        <textarea id="edit-summary" class="form-control" rows="4" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-provider">Proveedor</label>
+                            <input type="text" id="edit-provider" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-type">Tipo</label>
+                            <input type="text" id="edit-type" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-image-url">URL de Imagen</label>
+                        <input type="url" id="edit-image-url" class="form-control">
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="cancel-edit">Cancelar</button>
+                        <button type="submit" class="btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 id="confirm-title">Confirmar Acción</h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancel-confirm">Cancelar</button>
+                    <button type="button" class="btn-danger" id="confirm-action">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 News Portal - Panel de Administración</p>
+            <p class="footer-note">La página se actualiza automáticamente cada 30 segundos</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="js/admin.js"></script>
+</body>
+</html>

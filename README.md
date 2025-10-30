@@ -1,33 +1,59 @@
-# News Portal - Aplicación Web de Noticias
+# News Portal - Aplicación Web de Noticias con Agente IA
 
-Una aplicación web completa para gestionar y visualizar noticias, construida con Flask (backend) y JavaScript vanilla (frontend).
+Sistema completo de curación y publicación automatizada de contenidos con inteligencia artificial.
 
 ## Características
 
+### Aplicación Web
 - **Backend REST API** con Flask y SQLite
 - **Frontend responsive** con diseño moderno tipo tarjetas
+- **Panel de Administración** para revisión de contenidos (Human-in-the-Loop)
 - **Actualización automática** de contenido cada 30 segundos
 - **Validación de datos** en el backend
 - **Manejo de errores** robusto
 - **Diseño mobile-first** totalmente responsive
+
+### Agente IA (Nuevo)
+- **Monitorización de Telegram** para extraer URLs automáticamente
+- **Web Scraping con Playwright** (JavaScript rendering)
+- **Procesamiento con OpenAI GPT-4** para generar resúmenes
+- **Generación de imágenes con DALL-E 3** si no hay imagen disponible
+- **Flujo orquestado con LangGraph** para procesamiento complejo
+- **Human-in-the-Loop** antes de publicación final
 
 ## Estructura del Proyecto
 
 ```
 proyecto-agentes/
 ├── backend/
-│   ├── app.py              # Servidor Flask y endpoints API
-│   ├── database.py         # Gestión de base de datos SQLite
+│   ├── app.py              # Servidor Flask y endpoints API (actualizado)
+│   ├── database.py         # Gestión de BD SQLite (posts + pending_posts)
 │   ├── models.py           # Modelos y validación de datos
 │   └── requirements.txt    # Dependencias Python
 ├── frontend/
-│   ├── index.html          # Página principal
+│   ├── index.html          # Página pública de noticias
+│   ├── admin.html          # Panel de administración (NUEVO)
 │   ├── css/
-│   │   └── styles.css      # Estilos CSS
+│   │   ├── styles.css      # Estilos página pública
+│   │   └── admin.css       # Estilos panel admin (NUEVO)
 │   └── js/
-│       └── app.js          # Lógica JavaScript
+│       ├── app.js          # Lógica página pública
+│       └── admin.js        # Lógica panel admin (NUEVO)
+├── agent/                  # Agente IA (NUEVO)
+│   ├── main.py             # Script principal del agente
+│   ├── config.py           # Configuración
+│   ├── graph.py            # Orquestación con LangGraph
+│   ├── telegram_monitor.py # Monitorización de Telegram
+│   ├── web_scraper.py      # Scraping con Playwright
+│   ├── content_processor.py # Procesamiento con OpenAI
+│   ├── image_handler.py    # Gestión de imágenes
+│   ├── api_client.py       # Cliente HTTP para Flask API
+│   ├── requirements.txt    # Dependencias del agente
+│   ├── .env.example        # Template de configuración
+│   └── README.md           # Documentación del agente
 ├── .gitignore
-└── README.md
+├── claude.md               # Documentación completa del proyecto
+└── README.md               # Este archivo
 ```
 
 ## Requisitos Previos
@@ -348,15 +374,163 @@ del backend\posts.db  # Windows
 - CSS3 (Grid, Flexbox, Animaciones)
 - JavaScript (ES6+, Fetch API)
 
+## Agente IA de Curación de Contenidos
+
+### ¿Qué hace el agente?
+
+El agente IA automatiza completamente el proceso de curación de contenidos:
+
+1. **Monitoriza Telegram** - Se conecta a un grupo/canal y extrae URLs
+2. **Navega las URLs** - Usa Playwright para cargar páginas con JavaScript
+3. **Extrae contenido** - Obtiene título, contenido, imágenes y metadatos
+4. **Genera resúmenes** - Usa GPT-4 para crear resúmenes de 2-3 líneas
+5. **Maneja imágenes** - Extrae OpenGraph o genera con DALL-E 3
+6. **Crea posts pendientes** - Envía al backend para revisión humana
+
+### Instalación del Agente
+
+Ver documentación completa en [`agent/README.md`](agent/README.md)
+
+**Resumen rápido:**
+
+```bash
+cd agent
+python -m venv venv
+venv\Scripts\activate  # Windows
+pip install -r requirements.txt
+playwright install chromium
+
+# Configurar .env con credenciales
+cp .env.example .env
+# Editar .env con tus API keys
+```
+
+### Configuración Necesaria
+
+El agente requiere:
+
+- **OpenAI API Key** (https://platform.openai.com/api-keys)
+- **Telegram API credentials** (https://my.telegram.org/apps)
+- **Chat ID** del grupo de Telegram a monitorizar
+
+Ver `.env.example` en la carpeta `agent/` para detalles completos.
+
+### Ejecutar el Agente
+
+```bash
+cd agent
+python main.py
+```
+
+El agente procesará automáticamente todos los mensajes del grupo de Telegram y creará posts pendientes de revisión.
+
+### Flujo Completo del Sistema
+
+```
+┌─────────────┐
+│  Telegram   │ URLs compartidas en grupo
+│   (Grupo)   │
+└──────┬──────┘
+       │
+       ↓
+┌─────────────────────────────────────┐
+│        AGENTE IA (LangGraph)        │
+│  1. Extraer URLs                    │
+│  2. Scraping (Playwright)           │
+│  3. Procesar contenido (GPT-4)      │
+│  4. Generar/validar imagen (DALL-E) │
+│  5. Crear post pendiente (API)      │
+└──────┬──────────────────────────────┘
+       │
+       ↓
+┌─────────────────────────────────────┐
+│   PANEL DE ADMINISTRACIÓN           │
+│   (http://localhost:5000/admin.html)│
+│   - Ver posts pendientes            │
+│   - Editar título/resumen           │
+│   - Aprobar o rechazar              │
+└──────┬──────────────────────────────┘
+       │ (Aprobar)
+       ↓
+┌─────────────────────────────────────┐
+│   PÁGINA PÚBLICA                    │
+│   (http://localhost:5000)           │
+│   - Mostrar noticias aprobadas      │
+│   - Diseño tipo tarjetas            │
+└─────────────────────────────────────┘
+```
+
+## Panel de Administración
+
+El panel de administración (`admin.html`) permite revisar posts antes de publicarlos:
+
+**Características:**
+- Vista previa completa de cada post (título, resumen, imagen, fuente)
+- Filtros por estado (Pendiente, Aprobado, Rechazado)
+- Edición inline de título y resumen
+- Botones de aprobar/rechazar
+- Estadísticas en tiempo real
+- Actualización automática cada 30 segundos
+
+**Acceso:**
+```
+http://localhost:5000/admin.html
+```
+
+## API Endpoints (Actualizado)
+
+### Posts Públicos
+- `GET /api/posts` - Obtener posts publicados
+- `POST /api/posts` - Crear post público directamente
+
+### Posts Pendientes (Nuevo)
+- `GET /api/pending-posts` - Listar posts pendientes
+- `POST /api/pending-posts` - Crear post pendiente (usado por agente)
+- `PUT /api/pending-posts/<id>` - Editar post pendiente
+- `PUT /api/pending-posts/<id>/approve` - Aprobar y publicar
+- `PUT /api/pending-posts/<id>/reject` - Rechazar post
+- `DELETE /api/pending-posts/<id>` - Eliminar post pendiente
+
+Ver `http://localhost:5000/` para lista completa de endpoints.
+
+## Tecnologías Utilizadas
+
+**Backend:**
+- Python 3.7+
+- Flask 3.0 (Framework web)
+- flask-cors (CORS support)
+- SQLite3 (Base de datos)
+
+**Frontend:**
+- HTML5
+- CSS3 (Grid, Flexbox, Animaciones)
+- JavaScript Vanilla (ES6+, Fetch API)
+
+**Agente IA:**
+- LangGraph (Orquestación de agentes)
+- Telethon (Cliente Telegram)
+- Playwright (Web scraping con JavaScript)
+- OpenAI API (GPT-4 + DALL-E 3)
+- BeautifulSoup4 (Parsing HTML)
+
+## Documentación Adicional
+
+- [`claude.md`](claude.md) - Documentación completa del proyecto para Claude
+- [`agent/README.md`](agent/README.md) - Guía completa del agente IA
+
 ## Mejoras Futuras
 
-- Paginación de resultados
-- Búsqueda y filtrado de noticias
-- Edición y eliminación de posts
-- Autenticación de usuarios
-- Subida de imágenes al servidor
-- Caché de imágenes
-- Tests unitarios y de integración
+**Corto plazo:**
+- Autenticación para panel de administración
+- Logs detallados del agente
+- Persistencia de mensajes procesados (evitar duplicados)
+- Notificaciones cuando hay posts pendientes
+
+**Largo plazo:**
+- Ejecución automática con cron job
+- Soporte para múltiples fuentes (WhatsApp, RSS, Twitter)
+- Dashboard de estadísticas
+- Machine learning para scoring de calidad
 
 ## Licencia
 
@@ -364,4 +538,4 @@ Este proyecto es de código abierto y está disponible para uso educativo.
 
 ## Autor
 
-Proyecto creado como aplicación demo para gestión de noticias.
+Proyecto de agentes IA para curación automatizada de contenidos.
