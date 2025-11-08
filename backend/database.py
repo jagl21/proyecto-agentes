@@ -390,6 +390,7 @@ def approve_pending_post(post_id: int) -> Optional[int]:
 def reject_pending_post(post_id: int) -> bool:
     """
     Reject a pending post by updating its status.
+    If the post was already approved, also delete it from posts table (unpublish).
 
     Args:
         post_id: The ID of the pending post to reject
@@ -397,6 +398,35 @@ def reject_pending_post(post_id: int) -> bool:
     Returns:
         bool: True if rejection was successful, False otherwise
     """
+    # Get the pending post to check its current status
+    pending_post = get_pending_post_by_id(post_id)
+
+    if not pending_post:
+        return False
+
+    # If status is 'approved', the post is published - we need to unpublish it
+    if pending_post.get('status') == 'approved':
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+
+            # Find and delete the published post by source_url (should be unique)
+            cursor.execute('''
+                DELETE FROM posts
+                WHERE source_url = ?
+            ''', (pending_post['source_url'],))
+
+            deleted_count = cursor.rowcount
+            conn.commit()
+            conn.close()
+
+            if deleted_count > 0:
+                print(f"✓ Unpublished post: {pending_post['source_url']}")
+        except Exception as e:
+            print(f"Warning: Could not delete published post: {e}")
+            # Continue anyway to mark as rejected in pending_posts
+
+    # Update status to rejected in pending_posts
     return update_pending_post(post_id, {'status': 'rejected'})
 
 
