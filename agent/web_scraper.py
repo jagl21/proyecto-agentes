@@ -34,13 +34,61 @@ class WebScraper:
 
         try:
             async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=config.HEADLESS)
-                page = await browser.new_page(user_agent=config.USER_AGENT)
+                # Launch browser with anti-detection settings
+                browser = await p.chromium.launch(
+                    headless=config.HEADLESS,
+                    args=[
+                        '--disable-blink-features=AutomationControlled',
+                        '--disable-dev-shm-usage',
+                        '--no-sandbox'
+                    ]
+                )
 
-                # Navigate to URL
-                await page.goto(url, timeout=config.BROWSER_TIMEOUT, wait_until='domcontentloaded')
+                # Create context with realistic settings
+                context = await browser.new_context(
+                    user_agent=config.USER_AGENT,
+                    viewport={'width': 1920, 'height': 1080},
+                    locale='es-ES',
+                    timezone_id='Europe/Madrid'
+                )
 
-                # Wait a bit for dynamic content
+                page = await context.new_page()
+
+                # Set extra HTTP headers
+                await page.set_extra_http_headers({
+                    'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Referer': 'https://www.google.com/',
+                    'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"',
+                    'Upgrade-Insecure-Requests': '1'
+                })
+
+                # Navigate to URL with better wait strategy
+                await page.goto(url, timeout=config.BROWSER_TIMEOUT, wait_until='networkidle')
+
+                # Try to accept cookies if banner appears
+                try:
+                    # Common cookie button selectors
+                    cookie_buttons = [
+                        'button:has-text("Accept")',
+                        'button:has-text("Aceptar")',
+                        'button:has-text("I agree")',
+                        '[class*="accept"]',
+                        '[id*="accept"]'
+                    ]
+                    for selector in cookie_buttons:
+                        try:
+                            await page.click(selector, timeout=2000)
+                            await page.wait_for_timeout(1000)
+                            break
+                        except:
+                            continue
+                except:
+                    pass  # No cookie banner or couldn't click
+
+                # Wait a bit more for any dynamic content
                 await page.wait_for_timeout(2000)
 
                 # Get page content
@@ -66,9 +114,22 @@ class WebScraper:
                 result['success'] = True
                 print(f"✓ Scraped: {url[:50]}...")
 
+        except TimeoutError as e:
+            result['error'] = f"Timeout: La página tardó demasiado en cargar ({config.BROWSER_TIMEOUT}ms)"
+            print(f"✗ Timeout scraping {url}")
+
         except Exception as e:
-            result['error'] = str(e)
-            print(f"✗ Error scraping {url}: {e}")
+            error_msg = str(e)
+            # Detect common blocking patterns
+            if 'net::ERR_BLOCKED' in error_msg or 'blocked' in error_msg.lower():
+                result['error'] = "Bloqueado: El sitio rechazó la conexión (posible anti-bot)"
+            elif 'net::ERR_' in error_msg:
+                result['error'] = f"Error de red: {error_msg}"
+            elif 'Target closed' in error_msg:
+                result['error'] = "La página se cerró inesperadamente"
+            else:
+                result['error'] = error_msg
+            print(f"✗ Error scraping {url}: {result['error']}")
 
         return result
 

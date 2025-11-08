@@ -43,7 +43,7 @@ FLASK_PENDING_POSTS_ENDPOINT = f"{FLASK_API_URL}/api/pending-posts"
 
 HEADLESS = os.getenv('HEADLESS', 'true').lower() == 'true'
 BROWSER_TIMEOUT = int(os.getenv('BROWSER_TIMEOUT', '30000'))  # milliseconds
-USER_AGENT = os.getenv('USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+USER_AGENT = os.getenv('USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
 # ============================================
 # Agent Behavior Configuration

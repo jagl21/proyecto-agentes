@@ -42,6 +42,7 @@ def print_summary(final_state):
         print("\nErrors:")
         for i, error in enumerate(errors, 1):
             print(f"  {i}. {error['url'][:70]}")
+            print(f"     Stage: {error.get('stage', 'unknown')}")
             print(f"     Error: {error['error']}")
 
     print("\n" + "="*60)
@@ -80,7 +81,10 @@ async def main():
 
         # Execute the agent
         print("Starting agent execution...\n")
-        final_state = await agent.ainvoke(initial_state)
+        final_state = await agent.ainvoke(
+            initial_state,
+            config={"recursion_limit": 100}
+        )
 
         # Print summary
         print_summary(final_state)

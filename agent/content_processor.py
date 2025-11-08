@@ -101,7 +101,7 @@ if __name__ == '__main__':
     test_data = {
         'url': 'https://openai.com/blog/chatgpt',
         'title': 'ChatGPT: Optimizing Language Models',
-        'content': 'We've trained a model called ChatGPT which interacts in a conversational way...',
+        'content': "We've trained a model called ChatGPT which interacts in a conversational way...",
         'og_data': {}
     }
 

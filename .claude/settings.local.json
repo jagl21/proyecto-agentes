@@ -3,7 +3,11 @@
     "allow": [
       "Bash(dir \"C:\\workplace\\proyecto-agentes\")",
       "Bash(powershell -Command \"Get-ChildItem -Path ''C:\\workplace\\proyecto-agentes'' -Force | Select-Object Name, Mode\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "WebSearch",
+      "WebFetch(domain:langchain-ai.github.io)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:docs.langchain.com)"
     ],
     "deny": [],
     "ask": []
