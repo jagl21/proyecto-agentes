@@ -299,16 +299,28 @@
     position: relative;
     background: var(--card-bg);
     border-radius: var(--radius-lg);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     max-width: 600px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
     z-index: 1001;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .modal-content.modal-small {
-    max-width: 400px;
+    max-width: 450px;
 }
 
 .modal-header {
@@ -350,11 +362,51 @@
     padding: var(--spacing-lg);
 }
 
+.modal-body p {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.modal-footer {
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    background: var(--background);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
 .modal-actions {
     display: flex;
     gap: var(--spacing-sm);
     justify-content: flex-end;
     margin-top: var(--spacing-lg);
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: var(--transition);
+    line-height: 1;
+}
+
+.btn-close:hover {
+    background: var(--background);
+    color: var(--text-primary);
+    transform: scale(1.1);
 }
 
 /* ===================================
@@ -409,6 +461,7 @@ textarea.form-control {
     cursor: pointer;
     transition: var(--transition);
     font-size: 1rem;
+    min-width: 100px;
 }
 
 .btn-primary {
@@ -418,6 +471,8 @@ textarea.form-control {
 
 .btn-primary:hover {
     background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .btn-secondary {
@@ -428,6 +483,7 @@ textarea.form-control {
 
 .btn-secondary:hover {
     background: var(--border-color);
+    transform: translateY(-1px);
 }
 
 .btn-danger {

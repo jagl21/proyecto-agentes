@@ -270,6 +270,14 @@ agent/temp_session.session
 generated_images/
 images/cache/
 
+# Generated images from DALL-E (saved locally)
+frontend/images/generated/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
 # Backup files
 *.bak
 *.backup

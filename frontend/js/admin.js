@@ -124,7 +124,7 @@ async function renderAdminPage() {
 
         <div id="admin-confirm-modal" class="modal hidden">
             <div class="modal-overlay"></div>
-            <div class="modal-content">
+            <div class="modal-content modal-small">
                 <div class="modal-header">
                     <h2 id="admin-confirm-title">Confirmar Acción</h2>
                     <button id="admin-cancel-confirm" class="btn-close">×</button>
