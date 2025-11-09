@@ -1,5 +1,5 @@
 /**
- * News Portal - Frontend JavaScript (SPA Version)
+ * TL;DR News - Frontend JavaScript (SPA Version)
  * Renders the public news page
  */
 
@@ -18,8 +18,8 @@ async function renderNewsPage() {
     appContainer.innerHTML = `
         <header class="header">
             <div class="container">
-                <h1 class="logo">News Portal</h1>
-                <p class="tagline">Mantente informado con las últimas noticias</p>
+                <h1 class="logo">🤖 TL;DR News</h1>
+                <p class="tagline">Too Long; Didn't Read? El bot lo leyó por ti</p>
             </div>
         </header>
 
@@ -64,7 +64,7 @@ async function renderNewsPage() {
 
         <footer class="footer">
             <div class="container">
-                <p>&copy; 2024 News Portal. Todos los derechos reservados.</p>
+                <p>&copy; 2024 TL;DR News. Curado por IA, aprobado por humanos.</p>
                 <p class="footer-note">Las noticias se actualizan automáticamente cada 30 segundos</p>
             </div>
         </footer>

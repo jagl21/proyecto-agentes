@@ -22,8 +22,8 @@ async function renderAdminPage() {
             <div class="container">
                 <div class="header-content">
                     <div>
-                        <h1 class="logo">News Portal - Admin</h1>
-                        <p class="tagline">Panel de administración y revisión de contenidos</p>
+                        <h1 class="logo">🤖 TL;DR News - Admin</h1>
+                        <p class="tagline">Panel de administración - Curado por IA, aprobado por ti</p>
                     </div>
                 </div>
             </div>

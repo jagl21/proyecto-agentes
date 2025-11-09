@@ -123,12 +123,70 @@ class ImageHandler:
             print(f"  ✗ Error downloading image: {e}")
             return None
 
+    def _clean_title_for_prompt(self, title: str) -> str:
+        """
+        Clean title by removing site names and noise.
+
+        Args:
+            title: Original article title
+
+        Returns:
+            Cleaned title suitable for DALL-E prompt
+        """
+        # Remove common site names and noise words
+        sites_to_remove = [
+            'The Guardian', 'BBC', 'CNN', 'Reuters', 'Bloomberg',
+            'TechCrunch', 'Wired', 'The Verge', 'Ars Technica',
+            'New York Times', 'Washington Post', 'Forbes', 'Medium',
+            'Page Not Found', 'Error', '404', 'Not Found'
+        ]
+
+        cleaned = title
+        for site in sites_to_remove:
+            # Case-insensitive replacement
+            cleaned = cleaned.replace(site, '')
+            cleaned = cleaned.replace(site.lower(), '')
+
+        # Remove common separators and extra spaces
+        cleaned = cleaned.replace(' | ', ' ').replace(' - ', ' ').replace('|', '').replace('-', '')
+
+        # Normalize whitespace
+        cleaned = ' '.join(cleaned.split())
+
+        return cleaned.strip()
+
     def _create_image_prompt(self, title: str, summary: str) -> str:
-        """Create a prompt for DALL-E based on title and summary."""
-        # Keep it simple and descriptive
-        prompt = f"A professional, modern illustration representing: {title}. {summary[:100]}"
-        # Limit prompt length
-        return prompt[:400]
+        """
+        Create an optimized prompt for DALL-E based on title and summary.
+
+        Args:
+            title: Article title
+            summary: Article summary
+
+        Returns:
+            Optimized prompt for DALL-E image generation
+        """
+        # Clean title: remove site names and noise
+        cleaned_title = self._clean_title_for_prompt(title)
+
+        # Build structured prompt with visual guidelines
+        prompt = (
+            f"Professional editorial illustration for news article. "
+            f"Topic: {cleaned_title}. "
+            f"{summary[:150]}. "
+            f"Style: Modern, clean, minimalist, professional journalism. "
+            f"Format: Horizontal banner, centered composition. "
+            f"Colors: Balanced and professional. "
+            f"Avoid: Text, logos, watermarks."
+        )
+
+        # Limit to 400 chars
+        final_prompt = prompt[:400]
+
+        # Log prompt for debugging
+        print(f"  [DALL-E Prompt] {final_prompt}")
+
+        return final_prompt
 
 
 def handle_image(image_url: Optional[str], title: str, summary: str) -> Optional[str]:
