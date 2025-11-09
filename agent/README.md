@@ -94,19 +94,49 @@ Este script listará TODOS tus grupos y canales con sus IDs. Elige el que quiere
 
 ## Uso
 
-### Ejecución básica
+### Modo Batch (ejecución única)
 
 ```bash
 python main.py
 ```
 
-El agente:
+El agente procesa el historial de mensajes:
 1. Se conecta a Telegram
-2. Extrae URLs de los mensajes
+2. Extrae URLs de los últimos N mensajes
 3. Navega cada URL con Playwright
 4. Extrae contenido y genera resumen con OpenAI
 5. Obtiene o genera imágenes
 6. Crea posts pendientes en el backend
+7. **Termina la ejecución**
+
+### Modo Real-Time (monitoreo continuo) ⭐ RECOMENDADO
+
+```bash
+python main.py --realtime
+```
+
+El agente escucha nuevos mensajes indefinidamente:
+1. Se conecta a Telegram y **se queda escuchando**
+2. Cada vez que llega un **mensaje nuevo** con URLs:
+   - Extrae las URLs
+   - Las procesa automáticamente (scraping → IA → imagen → API)
+   - Crea posts pendientes
+3. **Nunca termina** (hasta Ctrl+C)
+
+**Ventajas del modo real-time:**
+- ✅ Procesamiento instantáneo de nuevos mensajes
+- ✅ No procesa mensajes duplicados (tracking con SQLite)
+- ✅ Ideal para producción (corre 24/7)
+- ✅ No requiere cron job o ejecución manual
+
+**Detener el agente:**
+```
+Ctrl+C (Windows/Mac/Linux)
+```
+
+El agente mostrará estadísticas al salir:
+- Total de mensajes procesados
+- Exitosos / Fallidos / Saltados
 
 ### Probar módulos individuales
 

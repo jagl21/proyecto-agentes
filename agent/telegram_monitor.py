@@ -1,13 +1,16 @@
 """
 Telegram Monitor Module
 Connects to Telegram and extracts URLs from messages.
+Supports both batch mode (process history) and real-time mode (listen for new messages).
 """
 
 import re
-from telethon import TelegramClient
+from telethon import TelegramClient, events
 from telethon.tl.types import Message
-from typing import List, Dict
+from typing import List, Dict, Callable, Awaitable
 import config
+from state_manager import StateManager
+import asyncio
 
 
 class TelegramMonitor:
@@ -71,6 +74,135 @@ class TelegramMonitor:
         """Disconnect from Telegram."""
         await self.client.disconnect()
         print("✓ Disconnected from Telegram")
+
+    async def start_realtime_monitoring(
+        self,
+        on_new_url: Callable[[str], Awaitable[None]]
+    ):
+        """
+        Start real-time monitoring of Telegram chat for new messages.
+        Listens indefinitely for new messages and processes URLs in real-time.
+
+        Args:
+            on_new_url: Async callback function to process each URL found
+                        Function signature: async def callback(url: str) -> None
+        """
+        # Initialize state manager for deduplication
+        state_manager = StateManager()
+
+        print("\n" + "="*60)
+        print("  REAL-TIME TELEGRAM MONITORING")
+        print("="*60)
+        print(f"Chat ID: {config.TELEGRAM_CHAT_ID}")
+        print(f"Monitoring for new messages with URLs...")
+        print("Press Ctrl+C to stop")
+        print("="*60 + "\n")
+
+        # Queue for processing URLs
+        url_queue = asyncio.Queue()
+
+        # Register event handler for new messages
+        @self.client.on(events.NewMessage(chats=int(config.TELEGRAM_CHAT_ID)))
+        async def handle_new_message(event):
+            """Handle new messages from the configured chat."""
+            message = event.message
+
+            # Skip if already processed
+            if state_manager.is_message_processed(message.id):
+                print(f"⚠ Message {message.id} already processed (skipping)")
+                return
+
+            # Extract URLs from message
+            if message.text:
+                urls = self._extract_urls(message.text)
+
+                if urls:
+                    print(f"\n[{message.date.strftime('%H:%M:%S')}] New message with {len(urls)} URL(s)")
+
+                    # Add URLs to processing queue
+                    for url in urls:
+                        await url_queue.put({
+                            'message_id': message.id,
+                            'url': url,
+                            'date': message.date
+                        })
+
+        # Worker to process URLs from queue
+        async def url_processor_worker():
+            """Process URLs from the queue."""
+            while True:
+                try:
+                    # Get URL from queue
+                    url_data = await url_queue.get()
+
+                    message_id = url_data['message_id']
+                    url = url_data['url']
+
+                    print(f"\n[Worker] Processing: {url[:70]}...")
+
+                    try:
+                        # Call the callback to process URL
+                        await on_new_url(url)
+
+                        # Mark as successfully processed
+                        state_manager.mark_message_processed(
+                            message_id=message_id,
+                            chat_id=config.TELEGRAM_CHAT_ID,
+                            url=url,
+                            status='processed'
+                        )
+
+                        print(f"✓ Completed processing: {url[:70]}")
+
+                    except Exception as e:
+                        # Mark as failed
+                        state_manager.mark_message_processed(
+                            message_id=message_id,
+                            chat_id=config.TELEGRAM_CHAT_ID,
+                            url=url,
+                            status='failed',
+                            error=str(e)
+                        )
+
+                        print(f"✗ Error processing URL: {e}")
+
+                    finally:
+                        url_queue.task_done()
+
+                except Exception as e:
+                    print(f"✗ Worker error: {e}")
+
+        # Start worker task
+        worker_task = asyncio.create_task(url_processor_worker())
+
+        try:
+            # Keep client running and listening for events
+            print("✓ Event handlers registered")
+            print("✓ Worker started")
+            print("\nListening for new messages...\n")
+
+            await self.client.run_until_disconnected()
+
+        except KeyboardInterrupt:
+            print("\n\n⚠ Monitoring stopped by user (Ctrl+C)")
+            worker_task.cancel()
+
+        except Exception as e:
+            print(f"\n✗ Fatal error in monitoring: {e}")
+            worker_task.cancel()
+            raise
+
+        finally:
+            # Print final stats
+            stats = state_manager.get_stats()
+            print("\n" + "="*60)
+            print("MONITORING SESSION STATS")
+            print("="*60)
+            print(f"Total messages processed: {stats['total']}")
+            print(f"Successful: {stats['processed']}")
+            print(f"Failed: {stats['failed']}")
+            print(f"Skipped: {stats['skipped']}")
+            print("="*60 + "\n")
 
 
 async def get_urls_from_telegram() -> List[str]:
