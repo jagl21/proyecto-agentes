@@ -774,11 +774,19 @@ def delete_pending_post(post_id):
 def not_found(error):
     """
     Handle 404 errors
+    For API routes: return JSON error
+    For SPA routes: serve index.html (let the router handle it)
     """
-    return jsonify({
-        'success': False,
-        'error': 'Endpoint not found'
-    }), 404
+    # If request is for API endpoint, return JSON error
+    if request.path.startswith('/api/'):
+        return jsonify({
+            'success': False,
+            'error': 'Endpoint not found'
+        }), 404
+
+    # Otherwise, serve the SPA (index.html)
+    # This allows client-side routing to work on refresh
+    return send_from_directory(frontend_dir, 'index.html')
 
 
 @app.errorhandler(500)
