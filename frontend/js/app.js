@@ -1,55 +1,109 @@
 /**
- * News Portal - Frontend JavaScript
- * Handles fetching posts from API and rendering them dynamically
+ * News Portal - Frontend JavaScript (SPA Version)
+ * Renders the public news page
  */
 
 // Configuration
-const API_URL = 'http://localhost:5000/api/posts';
-const REFRESH_INTERVAL = 30000; // 30 seconds
-let refreshTimer = null;
-
-// DOM Elements
-const postsContainer = document.getElementById('posts-container');
-const loadingElement = document.getElementById('loading');
-const errorElement = document.getElementById('error');
-const errorMessage = document.getElementById('error-message');
-const retryButton = document.getElementById('retry-button');
-const emptyState = document.getElementById('empty-state');
-const postsInfo = document.getElementById('posts-info');
-const postsCount = document.getElementById('posts-count');
-const lastUpdated = document.getElementById('last-updated');
+const NEWS_API_URL = 'http://localhost:5000/api/posts';
+const NEWS_REFRESH_INTERVAL = 30000; // 30 seconds
+let newsRefreshTimer = null;
 
 /**
- * Initialize the application
+ * Render the news page (called by router)
  */
-function init() {
-    console.log('Initializing News Portal...');
-    fetchPosts();
-    setupEventListeners();
-    startAutoRefresh();
+async function renderNewsPage() {
+    const appContainer = document.getElementById('app');
+
+    // Create news page HTML
+    appContainer.innerHTML = `
+        <header class="header">
+            <div class="container">
+                <h1 class="logo">News Portal</h1>
+                <p class="tagline">Mantente informado con las últimas noticias</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="container">
+                <!-- Loading indicator -->
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Cargando noticias...</p>
+                </div>
+
+                <!-- Error message -->
+                <div id="error" class="error hidden">
+                    <p id="error-message"></p>
+                    <button id="retry-button" class="btn-retry">Reintentar</button>
+                </div>
+
+                <!-- Posts counter -->
+                <div id="posts-info" class="posts-info hidden">
+                    <p>Mostrando <strong id="posts-count">0</strong> noticias</p>
+                    <div class="last-updated">
+                        Última actualización: <span id="last-updated"></span>
+                    </div>
+                </div>
+
+                <!-- Posts grid -->
+                <div id="posts-container" class="posts-grid">
+                    <!-- Posts will be dynamically inserted here -->
+                </div>
+
+                <!-- Empty state -->
+                <div id="empty-state" class="empty-state hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                    <h2>No hay noticias disponibles</h2>
+                    <p>Aún no se han publicado noticias. Vuelve a revisar más tarde.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <p>&copy; 2024 News Portal. Todos los derechos reservados.</p>
+                <p class="footer-note">Las noticias se actualizan automáticamente cada 30 segundos</p>
+            </div>
+        </footer>
+    `;
+
+    // Setup event listeners
+    setupNewsEventListeners();
+
+    // Fetch and display posts
+    await fetchNewsPosts();
+
+    // Start auto-refresh
+    startNewsAutoRefresh();
 }
 
 /**
- * Setup event listeners
+ * Setup event listeners for news page
  */
-function setupEventListeners() {
-    retryButton.addEventListener('click', () => {
-        hideError();
-        fetchPosts();
-    });
+function setupNewsEventListeners() {
+    const retryButton = document.getElementById('retry-button');
+    if (retryButton) {
+        retryButton.addEventListener('click', () => {
+            hideNewsError();
+            fetchNewsPosts();
+        });
+    }
 }
 
 /**
  * Fetch posts from the API
  */
-async function fetchPosts() {
+async function fetchNewsPosts() {
     try {
-        showLoading();
-        hideError();
-        hideEmptyState();
-        hidePostsInfo();
+        showNewsLoading();
+        hideNewsError();
+        hideNewsEmptyState();
+        hideNewsPostsInfo();
 
-        const response = await fetch(API_URL);
+        const response = await fetch(NEWS_API_URL);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -58,17 +112,17 @@ async function fetchPosts() {
         const result = await response.json();
 
         if (result.success && result.data) {
-            renderPosts(result.data);
-            updatePostsInfo(result.count || result.data.length);
+            renderNewsPosts(result.data);
+            updateNewsPostsInfo(result.count || result.data.length);
         } else {
             throw new Error('Invalid response format');
         }
 
     } catch (error) {
         console.error('Error fetching posts:', error);
-        showError(`Error al cargar las noticias: ${error.message}`);
+        showNewsError(`Error al cargar las noticias: ${error.message}`);
     } finally {
-        hideLoading();
+        hideNewsLoading();
     }
 }
 
@@ -76,18 +130,22 @@ async function fetchPosts() {
  * Render posts to the DOM
  * @param {Array} posts - Array of post objects
  */
-function renderPosts(posts) {
+function renderNewsPosts(posts) {
+    const postsContainer = document.getElementById('posts-container');
+
+    if (!postsContainer) return;
+
     // Clear existing posts
     postsContainer.innerHTML = '';
 
     if (!posts || posts.length === 0) {
-        showEmptyState();
+        showNewsEmptyState();
         return;
     }
 
     // Create and append post cards
     posts.forEach(post => {
-        const postCard = createPostCard(post);
+        const postCard = createNewsPostCard(post);
         postsContainer.appendChild(postCard);
     });
 }
@@ -97,7 +155,7 @@ function renderPosts(posts) {
  * @param {Object} post - Post data
  * @returns {HTMLElement} Post card element
  */
-function createPostCard(post) {
+function createNewsPostCard(post) {
     const card = document.createElement('article');
     card.className = 'post-card';
     card.setAttribute('data-post-id', post.id);
@@ -112,7 +170,6 @@ function createPostCard(post) {
         img.src = post.image_url;
         img.alt = post.title;
         img.onerror = () => {
-            // If image fails to load, show placeholder
             imageContainer.innerHTML = '<div class="post-image-placeholder">📰</div>';
         };
         imageContainer.appendChild(img);
@@ -134,7 +191,7 @@ function createPostCard(post) {
     summary.className = 'post-summary';
     summary.textContent = post.summary;
 
-    // Meta information (provider, type)
+    // Meta information
     const meta = document.createElement('div');
     meta.className = 'post-meta';
 
@@ -155,7 +212,7 @@ function createPostCard(post) {
     // Date
     const date = document.createElement('div');
     date.className = 'post-date';
-    date.textContent = `📅 ${formatDate(post.release_date)}`;
+    date.textContent = `📅 ${formatNewsDate(post.release_date)}`;
 
     // Link to source
     const link = document.createElement('a');
@@ -181,20 +238,17 @@ function createPostCard(post) {
 }
 
 /**
- * Format date string to readable format
+ * Format date string
  * @param {string} dateString - Date string
  * @returns {string} Formatted date
  */
-function formatDate(dateString) {
+function formatNewsDate(dateString) {
     try {
         const date = new Date(dateString);
-
-        // Check if date is valid
         if (isNaN(date.getTime())) {
-            return dateString; // Return original if invalid
+            return dateString;
         }
 
-        // Format options
         const options = {
             year: 'numeric',
             month: 'long',
@@ -211,115 +265,86 @@ function formatDate(dateString) {
  * Update posts info display
  * @param {number} count - Number of posts
  */
-function updatePostsInfo(count) {
-    postsCount.textContent = count;
-    lastUpdated.textContent = new Date().toLocaleTimeString('es-ES');
-    showPostsInfo();
+function updateNewsPostsInfo(count) {
+    const postsCount = document.getElementById('posts-count');
+    const lastUpdated = document.getElementById('last-updated');
+
+    if (postsCount) postsCount.textContent = count;
+    if (lastUpdated) lastUpdated.textContent = new Date().toLocaleTimeString('es-ES');
+
+    showNewsPostsInfo();
 }
 
 /**
  * Start automatic refresh
  */
-function startAutoRefresh() {
-    // Clear existing timer if any
-    if (refreshTimer) {
-        clearInterval(refreshTimer);
+function startNewsAutoRefresh() {
+    // Clear existing timer
+    if (newsRefreshTimer) {
+        clearInterval(newsRefreshTimer);
     }
 
-    // Set up new timer
-    refreshTimer = setInterval(() => {
-        console.log('Auto-refreshing posts...');
-        fetchPosts();
-    }, REFRESH_INTERVAL);
-
-    console.log(`Auto-refresh enabled (every ${REFRESH_INTERVAL / 1000} seconds)`);
+    // Only auto-refresh if we're on the news page
+    newsRefreshTimer = setInterval(() => {
+        if (getCurrentRoute() === '/') {
+            console.log('Auto-refreshing news...');
+            fetchNewsPosts();
+        }
+    }, NEWS_REFRESH_INTERVAL);
 }
 
 /**
  * Stop automatic refresh
  */
-function stopAutoRefresh() {
-    if (refreshTimer) {
-        clearInterval(refreshTimer);
-        refreshTimer = null;
-        console.log('Auto-refresh disabled');
+function stopNewsAutoRefresh() {
+    if (newsRefreshTimer) {
+        clearInterval(newsRefreshTimer);
+        newsRefreshTimer = null;
     }
 }
 
 // ============================================
-// UI State Management Functions
+// UI State Management
 // ============================================
 
-function showLoading() {
-    loadingElement.classList.remove('hidden');
+function showNewsLoading() {
+    const el = document.getElementById('loading');
+    if (el) el.classList.remove('hidden');
 }
 
-function hideLoading() {
-    loadingElement.classList.add('hidden');
+function hideNewsLoading() {
+    const el = document.getElementById('loading');
+    if (el) el.classList.add('hidden');
 }
 
-function showError(message) {
-    errorMessage.textContent = message;
-    errorElement.classList.remove('hidden');
-    stopAutoRefresh();
+function showNewsError(message) {
+    const errorEl = document.getElementById('error');
+    const errorMsg = document.getElementById('error-message');
+    if (errorEl) errorEl.classList.remove('hidden');
+    if (errorMsg) errorMsg.textContent = message;
 }
 
-function hideError() {
-    errorElement.classList.add('hidden');
-    startAutoRefresh();
+function hideNewsError() {
+    const el = document.getElementById('error');
+    if (el) el.classList.add('hidden');
 }
 
-function showEmptyState() {
-    emptyState.classList.remove('hidden');
+function showNewsEmptyState() {
+    const el = document.getElementById('empty-state');
+    if (el) el.classList.remove('hidden');
 }
 
-function hideEmptyState() {
-    emptyState.classList.add('hidden');
+function hideNewsEmptyState() {
+    const el = document.getElementById('empty-state');
+    if (el) el.classList.add('hidden');
 }
 
-function showPostsInfo() {
-    postsInfo.classList.remove('hidden');
+function showNewsPostsInfo() {
+    const el = document.getElementById('posts-info');
+    if (el) el.classList.remove('hidden');
 }
 
-function hidePostsInfo() {
-    postsInfo.classList.add('hidden');
-}
-
-// ============================================
-// Event Listeners for Page Lifecycle
-// ============================================
-
-// Stop refresh when page is hidden
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        stopAutoRefresh();
-    } else {
-        startAutoRefresh();
-        fetchPosts();
-    }
-});
-
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-    stopAutoRefresh();
-});
-
-// ============================================
-// Initialize Application
-// ============================================
-
-// Start the application when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
-
-// Export functions for testing (optional)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        fetchPosts,
-        renderPosts,
-        formatDate
-    };
+function hideNewsPostsInfo() {
+    const el = document.getElementById('posts-info');
+    if (el) el.classList.add('hidden');
 }

@@ -1,101 +1,215 @@
 /**
- * Admin Panel - JavaScript
+ * Admin Panel - JavaScript (SPA Version)
  * Handles pending posts review, approval, rejection, and editing
  */
 
 // Configuration
-const API_URL = 'http://localhost:5000/api/pending-posts';
-const REFRESH_INTERVAL = 30000; // 30 seconds
-let refreshTimer = null;
-let currentFilter = 'pending';
-let currentActionCallback = null;
-
-// DOM Elements
-const pendingPostsContainer = document.getElementById('pending-posts-container');
-const loadingElement = document.getElementById('loading');
-const errorElement = document.getElementById('error');
-const errorMessage = document.getElementById('error-message');
-const retryButton = document.getElementById('retry-button');
-const emptyState = document.getElementById('empty-state');
-const statsBar = document.getElementById('stats-bar');
-const lastUpdated = document.getElementById('last-updated');
-
-// Filter tabs
-const tabButtons = document.querySelectorAll('.tab-button');
-const totalPending = document.getElementById('total-pending');
-const pendingCount = document.getElementById('pending-count');
-
-// Badges
-const badgePending = document.getElementById('badge-pending');
-const badgeAll = document.getElementById('badge-all');
-const badgeApproved = document.getElementById('badge-approved');
-const badgeRejected = document.getElementById('badge-rejected');
-
-// Edit Modal
-const editModal = document.getElementById('edit-modal');
-const closeModalBtn = document.getElementById('close-modal');
-const cancelEditBtn = document.getElementById('cancel-edit');
-const editForm = document.getElementById('edit-form');
-const editPostId = document.getElementById('edit-post-id');
-const editTitle = document.getElementById('edit-title');
-const editSummary = document.getElementById('edit-summary');
-const editProvider = document.getElementById('edit-provider');
-const editType = document.getElementById('edit-type');
-const editImageUrl = document.getElementById('edit-image-url');
-
-// Confirm Modal
-const confirmModal = document.getElementById('confirm-modal');
-const confirmTitle = document.getElementById('confirm-title');
-const confirmMessage = document.getElementById('confirm-message');
-const cancelConfirmBtn = document.getElementById('cancel-confirm');
-const confirmActionBtn = document.getElementById('confirm-action');
+const ADMIN_API_URL = 'http://localhost:5000/api/pending-posts';
+const ADMIN_REFRESH_INTERVAL = 30000; // 30 seconds
+let adminRefreshTimer = null;
+let adminCurrentFilter = 'pending';
+let adminCurrentActionCallback = null;
 
 /**
- * Initialize the application
+ * Render the admin page (called by router)
  */
-function init() {
-    console.log('Initializing Admin Panel...');
-    fetchPendingPosts();
-    setupEventListeners();
-    startAutoRefresh();
+async function renderAdminPage() {
+    const appContainer = document.getElementById('app');
+
+    // Admin page HTML
+    appContainer.innerHTML = `
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div>
+                        <h1 class="logo">News Portal - Admin</h1>
+                        <p class="tagline">Panel de administración y revisión de contenidos</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="container">
+                <div id="admin-stats-bar" class="stats-bar hidden">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Pendientes:</span>
+                        <span class="stat-value" id="admin-total-pending">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Para Revisar:</span>
+                        <span class="stat-value pending" id="admin-pending-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Última actualización:</span>
+                        <span class="stat-value" id="admin-last-updated"></span>
+                    </div>
+                </div>
+
+                <div class="filter-tabs">
+                    <button class="tab-button active" data-status="pending">
+                        Pendientes <span class="badge" id="admin-badge-pending">0</span>
+                    </button>
+                    <button class="tab-button" data-status="all">
+                        Todos <span class="badge" id="admin-badge-all">0</span>
+                    </button>
+                    <button class="tab-button" data-status="approved">
+                        Aprobados <span class="badge" id="admin-badge-approved">0</span>
+                    </button>
+                    <button class="tab-button" data-status="rejected">
+                        Rechazados <span class="badge" id="admin-badge-rejected">0</span>
+                    </button>
+                </div>
+
+                <div id="admin-loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Cargando posts pendientes...</p>
+                </div>
+
+                <div id="admin-error" class="error hidden">
+                    <p id="admin-error-message"></p>
+                    <button id="admin-retry-button" class="btn-retry">Reintentar</button>
+                </div>
+
+                <div id="admin-pending-posts-container" class="admin-posts-grid"></div>
+
+                <div id="admin-empty-state" class="empty-state hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <h2>No hay posts pendientes de revisión</h2>
+                    <p>Todos los posts han sido procesados. Ejecuta el agente IA para generar nuevos contenidos.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modals -->
+        <div id="admin-edit-modal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Editar Post</h2>
+                    <button id="admin-close-modal" class="btn-close">×</button>
+                </div>
+                <form id="admin-edit-form">
+                    <input type="hidden" id="admin-edit-post-id">
+                    <div class="form-group">
+                        <label>Título</label>
+                        <input type="text" id="admin-edit-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Resumen</label>
+                        <textarea id="admin-edit-summary" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Proveedor</label>
+                        <input type="text" id="admin-edit-provider">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <input type="text" id="admin-edit-type">
+                    </div>
+                    <div class="form-group">
+                        <label>URL Imagen</label>
+                        <input type="url" id="admin-edit-image-url">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="admin-cancel-edit" class="btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="admin-confirm-modal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="admin-confirm-title">Confirmar Acción</h2>
+                    <button id="admin-cancel-confirm" class="btn-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <p id="admin-confirm-message"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="admin-cancel-confirm-btn" class="btn-secondary">Cancelar</button>
+                    <button type="button" id="admin-confirm-action" class="btn-primary">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Setup event listeners
+    setupAdminEventListeners();
+
+    // Fetch posts
+    await fetchAdminPendingPosts();
+
+    // Start auto-refresh
+    startAdminAutoRefresh();
 }
 
 /**
- * Setup event listeners
+ * Setup event listeners for admin page
  */
-function setupEventListeners() {
+function setupAdminEventListeners() {
     // Retry button
-    retryButton.addEventListener('click', () => {
-        hideError();
-        fetchPendingPosts();
-    });
+    const retryBtn = document.getElementById('admin-retry-button');
+    if (retryBtn) {
+        retryBtn.addEventListener('click', () => {
+            hideAdminError();
+            fetchAdminPendingPosts();
+        });
+    }
 
     // Filter tabs
+    const tabButtons = document.querySelectorAll('.tab-button');
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const status = button.dataset.status;
-            setActiveTab(status);
-            currentFilter = status;
-            fetchPendingPosts();
+            setAdminActiveTab(status);
+            adminCurrentFilter = status;
+            fetchAdminPendingPosts();
         });
     });
 
     // Edit modal
-    closeModalBtn.addEventListener('click', closeEditModal);
-    cancelEditBtn.addEventListener('click', closeEditModal);
-    editModal.querySelector('.modal-overlay').addEventListener('click', closeEditModal);
-    editForm.addEventListener('submit', handleEditSubmit);
+    const closeModalBtn = document.getElementById('admin-close-modal');
+    const cancelEditBtn = document.getElementById('admin-cancel-edit');
+    const editForm = document.getElementById('admin-edit-form');
+    const editModal = document.getElementById('admin-edit-modal');
+
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeAdminEditModal);
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeAdminEditModal);
+    if (editModal) {
+        const overlay = editModal.querySelector('.modal-overlay');
+        if (overlay) overlay.addEventListener('click', closeAdminEditModal);
+    }
+    if (editForm) editForm.addEventListener('submit', handleAdminEditSubmit);
 
     // Confirm modal
-    cancelConfirmBtn.addEventListener('click', closeConfirmModal);
-    confirmModal.querySelector('.modal-overlay').addEventListener('click', closeConfirmModal);
-    confirmActionBtn.addEventListener('click', handleConfirmAction);
+    const cancelConfirmBtns = document.querySelectorAll('#admin-cancel-confirm, #admin-cancel-confirm-btn');
+    const confirmActionBtn = document.getElementById('admin-confirm-action');
+    const confirmModal = document.getElementById('admin-confirm-modal');
+
+    cancelConfirmBtns.forEach(btn => {
+        if (btn) btn.addEventListener('click', closeAdminConfirmModal);
+    });
+
+    if (confirmModal) {
+        const overlay = confirmModal.querySelector('.modal-overlay');
+        if (overlay) overlay.addEventListener('click', closeAdminConfirmModal);
+    }
+
+    if (confirmActionBtn) confirmActionBtn.addEventListener('click', handleAdminConfirmAction);
 }
 
 /**
  * Set active tab
  */
-function setActiveTab(status) {
+function setAdminActiveTab(status) {
+    const tabButtons = document.querySelectorAll('.tab-button');
     tabButtons.forEach(button => {
         if (button.dataset.status === status) {
             button.classList.add('active');
@@ -108,19 +222,19 @@ function setActiveTab(status) {
 /**
  * Fetch pending posts from API
  */
-async function fetchPendingPosts() {
+async function fetchAdminPendingPosts() {
     try {
-        showLoading();
-        hideError();
-        hideEmptyState();
+        showAdminLoading();
+        hideAdminError();
+        hideAdminEmptyState();
 
         // Build URL with status filter
-        let url = API_URL;
-        if (currentFilter !== 'all') {
-            url += `?status=${currentFilter}`;
+        let url = ADMIN_API_URL;
+        if (adminCurrentFilter !== 'all') {
+            url += `?status=${adminCurrentFilter}`;
         }
 
-        const response = await fetch(url);
+        const response = await authFetch(url);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -129,41 +243,42 @@ async function fetchPendingPosts() {
         const result = await response.json();
 
         if (result.success && result.data) {
-            renderPendingPosts(result.data);
-            updateStats(result.data);
+            renderAdminPendingPosts(result.data);
+            updateAdminStats(result.data);
         } else {
             throw new Error('Invalid response format');
         }
 
     } catch (error) {
         console.error('Error fetching pending posts:', error);
-        showError(`Error al cargar los posts pendientes: ${error.message}`);
+        showAdminError(`Error al cargar los posts pendientes: ${error.message}`);
     } finally {
-        hideLoading();
+        hideAdminLoading();
     }
 }
 
 /**
  * Render pending posts to the DOM
  */
-function renderPendingPosts(posts) {
-    pendingPostsContainer.innerHTML = '';
+function renderAdminPendingPosts(posts) {
+    const container = document.getElementById('admin-pending-posts-container');
+    container.innerHTML = '';
 
     if (!posts || posts.length === 0) {
-        showEmptyState();
+        showAdminEmptyState();
         return;
     }
 
     posts.forEach(post => {
-        const postCard = createPendingPostCard(post);
-        pendingPostsContainer.appendChild(postCard);
+        const postCard = createAdminPendingPostCard(post);
+        container.appendChild(postCard);
     });
 }
 
 /**
  * Create a pending post card element
  */
-function createPendingPostCard(post) {
+function createAdminPendingPostCard(post) {
     const card = document.createElement('article');
     card.className = `post-card admin-post-card status-${post.status}`;
     card.setAttribute('data-post-id', post.id);
@@ -228,7 +343,7 @@ function createPendingPostCard(post) {
     // Date
     const date = document.createElement('div');
     date.className = 'post-date';
-    date.textContent = `📅 ${formatDate(post.release_date)}`;
+    date.textContent = `📅 ${formatAdminDate(post.release_date)}`;
 
     // Source link
     const link = document.createElement('a');
@@ -246,16 +361,16 @@ function createPendingPostCard(post) {
     const editBtn = document.createElement('button');
     editBtn.className = 'btn-edit';
     editBtn.textContent = 'Editar';
-    editBtn.onclick = () => openEditModal(post);
+    editBtn.onclick = () => openAdminEditModal(post);
 
     // Approve button
     const approveBtn = document.createElement('button');
     approveBtn.className = 'btn-approve';
     approveBtn.textContent = 'Aprobar';
-    approveBtn.onclick = () => showConfirmModal(
+    approveBtn.onclick = () => showAdminConfirmModal(
         'Aprobar Post',
         '¿Estás seguro de que deseas aprobar y publicar este post?',
-        () => approvePost(post.id)
+        () => approveAdminPost(post.id)
     );
     approveBtn.disabled = post.status === 'approved';
 
@@ -263,10 +378,10 @@ function createPendingPostCard(post) {
     const rejectBtn = document.createElement('button');
     rejectBtn.className = 'btn-reject';
     rejectBtn.textContent = 'Rechazar';
-    rejectBtn.onclick = () => showConfirmModal(
+    rejectBtn.onclick = () => showAdminConfirmModal(
         'Rechazar Post',
         '¿Estás seguro de que deseas rechazar este post?',
-        () => rejectPost(post.id)
+        () => rejectAdminPost(post.id)
     );
     rejectBtn.disabled = post.status === 'rejected';
 
@@ -293,10 +408,10 @@ function createPendingPostCard(post) {
 /**
  * Update statistics
  */
-async function updateStats(currentPosts) {
+async function updateAdminStats(currentPosts) {
     try {
         // Fetch all posts to get accurate counts
-        const response = await fetch(API_URL);
+        const response = await authFetch(ADMIN_API_URL);
         const result = await response.json();
 
         if (result.success) {
@@ -305,17 +420,17 @@ async function updateStats(currentPosts) {
             const approved = allPosts.filter(p => p.status === 'approved').length;
             const rejected = allPosts.filter(p => p.status === 'rejected').length;
 
-            totalPending.textContent = allPosts.length;
-            pendingCount.textContent = pending;
-            lastUpdated.textContent = new Date().toLocaleTimeString('es-ES');
+            document.getElementById('admin-total-pending').textContent = allPosts.length;
+            document.getElementById('admin-pending-count').textContent = pending;
+            document.getElementById('admin-last-updated').textContent = new Date().toLocaleTimeString('es-ES');
 
             // Update badges
-            badgePending.textContent = pending;
-            badgeAll.textContent = allPosts.length;
-            badgeApproved.textContent = approved;
-            badgeRejected.textContent = rejected;
+            document.getElementById('admin-badge-pending').textContent = pending;
+            document.getElementById('admin-badge-all').textContent = allPosts.length;
+            document.getElementById('admin-badge-approved').textContent = approved;
+            document.getElementById('admin-badge-rejected').textContent = rejected;
 
-            showStatsBar();
+            showAdminStatsBar();
         }
     } catch (error) {
         console.error('Error updating stats:', error);
@@ -325,42 +440,44 @@ async function updateStats(currentPosts) {
 /**
  * Open edit modal with post data
  */
-function openEditModal(post) {
-    editPostId.value = post.id;
-    editTitle.value = post.title;
-    editSummary.value = post.summary;
-    editProvider.value = post.provider || '';
-    editType.value = post.type || '';
-    editImageUrl.value = post.image_url || '';
+function openAdminEditModal(post) {
+    document.getElementById('admin-edit-post-id').value = post.id;
+    document.getElementById('admin-edit-title').value = post.title;
+    document.getElementById('admin-edit-summary').value = post.summary;
+    document.getElementById('admin-edit-provider').value = post.provider || '';
+    document.getElementById('admin-edit-type').value = post.type || '';
+    document.getElementById('admin-edit-image-url').value = post.image_url || '';
 
-    editModal.classList.remove('hidden');
+    document.getElementById('admin-edit-modal').classList.remove('hidden');
 }
 
 /**
  * Close edit modal
  */
-function closeEditModal() {
-    editModal.classList.add('hidden');
-    editForm.reset();
+function closeAdminEditModal() {
+    const modal = document.getElementById('admin-edit-modal');
+    const form = document.getElementById('admin-edit-form');
+    modal.classList.add('hidden');
+    form.reset();
 }
 
 /**
  * Handle edit form submission
  */
-async function handleEditSubmit(e) {
+async function handleAdminEditSubmit(e) {
     e.preventDefault();
 
-    const postId = editPostId.value;
+    const postId = document.getElementById('admin-edit-post-id').value;
     const updateData = {
-        title: editTitle.value,
-        summary: editSummary.value,
-        provider: editProvider.value || null,
-        type: editType.value || null,
-        image_url: editImageUrl.value || null
+        title: document.getElementById('admin-edit-title').value,
+        summary: document.getElementById('admin-edit-summary').value,
+        provider: document.getElementById('admin-edit-provider').value || null,
+        type: document.getElementById('admin-edit-type').value || null,
+        image_url: document.getElementById('admin-edit-image-url').value || null
     };
 
     try {
-        const response = await fetch(`${API_URL}/${postId}`, {
+        const response = await authFetch(`${ADMIN_API_URL}/${postId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -372,8 +489,8 @@ async function handleEditSubmit(e) {
 
         if (result.success) {
             showNotification('Éxito', 'Post actualizado correctamente', 'success');
-            closeEditModal();
-            fetchPendingPosts();
+            closeAdminEditModal();
+            fetchAdminPendingPosts();
         } else {
             throw new Error(result.error || 'Error desconocido');
         }
@@ -386,37 +503,37 @@ async function handleEditSubmit(e) {
 /**
  * Show confirmation modal
  */
-function showConfirmModal(title, message, callback) {
-    confirmTitle.textContent = title;
-    confirmMessage.textContent = message;
-    currentActionCallback = callback;
-    confirmModal.classList.remove('hidden');
+function showAdminConfirmModal(title, message, callback) {
+    document.getElementById('admin-confirm-title').textContent = title;
+    document.getElementById('admin-confirm-message').textContent = message;
+    adminCurrentActionCallback = callback;
+    document.getElementById('admin-confirm-modal').classList.remove('hidden');
 }
 
 /**
  * Close confirmation modal
  */
-function closeConfirmModal() {
-    confirmModal.classList.add('hidden');
-    currentActionCallback = null;
+function closeAdminConfirmModal() {
+    document.getElementById('admin-confirm-modal').classList.add('hidden');
+    adminCurrentActionCallback = null;
 }
 
 /**
  * Handle confirmed action
  */
-function handleConfirmAction() {
-    if (currentActionCallback) {
-        currentActionCallback();
+function handleAdminConfirmAction() {
+    if (adminCurrentActionCallback) {
+        adminCurrentActionCallback();
     }
-    closeConfirmModal();
+    closeAdminConfirmModal();
 }
 
 /**
  * Approve a post
  */
-async function approvePost(postId) {
+async function approveAdminPost(postId) {
     try {
-        const response = await fetch(`${API_URL}/${postId}/approve`, {
+        const response = await authFetch(`${ADMIN_API_URL}/${postId}/approve`, {
             method: 'PUT'
         });
 
@@ -424,7 +541,7 @@ async function approvePost(postId) {
 
         if (result.success) {
             showNotification('Aprobado', 'Post aprobado y publicado correctamente', 'success');
-            fetchPendingPosts();
+            fetchAdminPendingPosts();
         } else {
             throw new Error(result.error || 'Error desconocido');
         }
@@ -437,9 +554,9 @@ async function approvePost(postId) {
 /**
  * Reject a post
  */
-async function rejectPost(postId) {
+async function rejectAdminPost(postId) {
     try {
-        const response = await fetch(`${API_URL}/${postId}/reject`, {
+        const response = await authFetch(`${ADMIN_API_URL}/${postId}/reject`, {
             method: 'PUT'
         });
 
@@ -447,7 +564,7 @@ async function rejectPost(postId) {
 
         if (result.success) {
             showNotification('Rechazado', 'Post rechazado correctamente', 'success');
-            fetchPendingPosts();
+            fetchAdminPendingPosts();
         } else {
             throw new Error(result.error || 'Error desconocido');
         }
@@ -458,46 +575,9 @@ async function rejectPost(postId) {
 }
 
 /**
- * Show notification
- */
-function showNotification(title, message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-
-    const icon = document.createElement('div');
-    icon.className = 'notification-icon';
-    icon.textContent = type === 'success' ? '✓' : '✕';
-
-    const content = document.createElement('div');
-    content.className = 'notification-content';
-
-    const titleEl = document.createElement('div');
-    titleEl.className = 'notification-title';
-    titleEl.textContent = title;
-
-    const messageEl = document.createElement('div');
-    messageEl.className = 'notification-message';
-    messageEl.textContent = message;
-
-    content.appendChild(titleEl);
-    content.appendChild(messageEl);
-
-    notification.appendChild(icon);
-    notification.appendChild(content);
-
-    document.body.appendChild(notification);
-
-    // Auto-remove after 3 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideIn 0.3s ease reverse';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
-
-/**
  * Format date string
  */
-function formatDate(dateString) {
+function formatAdminDate(dateString) {
     try {
         const date = new Date(dateString);
 
@@ -520,27 +600,27 @@ function formatDate(dateString) {
 /**
  * Start automatic refresh
  */
-function startAutoRefresh() {
-    if (refreshTimer) {
-        clearInterval(refreshTimer);
+function startAdminAutoRefresh() {
+    if (adminRefreshTimer) {
+        clearInterval(adminRefreshTimer);
     }
 
-    refreshTimer = setInterval(() => {
-        console.log('Auto-refreshing pending posts...');
-        fetchPendingPosts();
-    }, REFRESH_INTERVAL);
+    adminRefreshTimer = setInterval(() => {
+        console.log('Auto-refreshing admin pending posts...');
+        fetchAdminPendingPosts();
+    }, ADMIN_REFRESH_INTERVAL);
 
-    console.log(`Auto-refresh enabled (every ${REFRESH_INTERVAL / 1000} seconds)`);
+    console.log(`Admin auto-refresh enabled (every ${ADMIN_REFRESH_INTERVAL / 1000} seconds)`);
 }
 
 /**
  * Stop automatic refresh
  */
-function stopAutoRefresh() {
-    if (refreshTimer) {
-        clearInterval(refreshTimer);
-        refreshTimer = null;
-        console.log('Auto-refresh disabled');
+function stopAdminAutoRefresh() {
+    if (adminRefreshTimer) {
+        clearInterval(adminRefreshTimer);
+        adminRefreshTimer = null;
+        console.log('Admin auto-refresh disabled');
     }
 }
 
@@ -548,64 +628,46 @@ function stopAutoRefresh() {
 // UI State Management
 // ============================================
 
-function showLoading() {
-    loadingElement.classList.remove('hidden');
+function showAdminLoading() {
+    const el = document.getElementById('admin-loading');
+    if (el) el.classList.remove('hidden');
 }
 
-function hideLoading() {
-    loadingElement.classList.add('hidden');
+function hideAdminLoading() {
+    const el = document.getElementById('admin-loading');
+    if (el) el.classList.add('hidden');
 }
 
-function showError(message) {
-    errorMessage.textContent = message;
-    errorElement.classList.remove('hidden');
-    stopAutoRefresh();
+function showAdminError(message) {
+    const errorEl = document.getElementById('admin-error');
+    const messageEl = document.getElementById('admin-error-message');
+    if (messageEl) messageEl.textContent = message;
+    if (errorEl) errorEl.classList.remove('hidden');
+    stopAdminAutoRefresh();
 }
 
-function hideError() {
-    errorElement.classList.add('hidden');
-    startAutoRefresh();
+function hideAdminError() {
+    const el = document.getElementById('admin-error');
+    if (el) el.classList.add('hidden');
+    startAdminAutoRefresh();
 }
 
-function showEmptyState() {
-    emptyState.classList.remove('hidden');
+function showAdminEmptyState() {
+    const el = document.getElementById('admin-empty-state');
+    if (el) el.classList.remove('hidden');
 }
 
-function hideEmptyState() {
-    emptyState.classList.add('hidden');
+function hideAdminEmptyState() {
+    const el = document.getElementById('admin-empty-state');
+    if (el) el.classList.add('hidden');
 }
 
-function showStatsBar() {
-    statsBar.classList.remove('hidden');
+function showAdminStatsBar() {
+    const el = document.getElementById('admin-stats-bar');
+    if (el) el.classList.remove('hidden');
 }
 
-function hideStatsBar() {
-    statsBar.classList.add('hidden');
-}
-
-// ============================================
-// Page Lifecycle Events
-// ============================================
-
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        stopAutoRefresh();
-    } else {
-        startAutoRefresh();
-        fetchPendingPosts();
-    }
-});
-
-window.addEventListener('beforeunload', () => {
-    stopAutoRefresh();
-});
-
-// ============================================
-// Initialize Application
-// ============================================
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
+function hideAdminStatsBar() {
+    const el = document.getElementById('admin-stats-bar');
+    if (el) el.classList.add('hidden');
 }

@@ -6,6 +6,7 @@ Handles SQLite database initialization and CRUD operations.
 import sqlite3
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+import bcrypt
 
 DATABASE_NAME = 'posts.db'
 
@@ -60,9 +61,25 @@ def init_database():
         )
     ''')
 
+    # Create users table (authentication and authorization)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT DEFAULT 'user' CHECK(role IN ('admin', 'user')),
+            is_active BOOLEAN DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     conn.commit()
     conn.close()
     print("Database initialized successfully")
+
+    # Create initial admin user if none exists
+    create_initial_admin()
 
 
 def create_post(post_data: Dict[str, Any]) -> int:
@@ -444,6 +461,291 @@ def delete_pending_post(post_id: int) -> bool:
     cursor = conn.cursor()
 
     cursor.execute('DELETE FROM pending_posts WHERE id = ?', (post_id,))
+
+    rows_affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    return rows_affected > 0
+
+
+# ============================================
+# User Management Functions
+# ============================================
+
+def hash_password(password: str) -> str:
+    """
+    Hash a password using bcrypt.
+
+    Args:
+        password: Plain text password
+
+    Returns:
+        str: Hashed password
+    """
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """
+    Verify a password against its hash.
+
+    Args:
+        password: Plain text password to verify
+        password_hash: Stored password hash
+
+    Returns:
+        bool: True if password matches, False otherwise
+    """
+    return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+
+
+def create_initial_admin():
+    """
+    Create an initial admin user if no users exist.
+    Default credentials: username='admin', password='admin123'
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Check if any users exist
+    cursor.execute('SELECT COUNT(*) FROM users')
+    count = cursor.fetchone()[0]
+
+    if count == 0:
+        # Create default admin user
+        password_hash = hash_password('admin123')
+        cursor.execute('''
+            INSERT INTO users (username, email, password_hash, role)
+            VALUES (?, ?, ?, ?)
+        ''', ('admin', 'admin@localhost', password_hash, 'admin'))
+
+        conn.commit()
+        print("✓ Created initial admin user (username: admin, password: admin123)")
+        print("  ⚠ Please change the default password after first login!")
+
+    conn.close()
+
+
+def create_user(user_data: Dict[str, Any]) -> int:
+    """
+    Create a new user.
+
+    Args:
+        user_data: Dictionary containing user information
+            Required: username, email, password
+            Optional: role (default: 'user')
+
+    Returns:
+        int: ID of the newly created user
+
+    Raises:
+        ValueError: If required fields are missing or user already exists
+    """
+    required_fields = ['username', 'email', 'password']
+    for field in required_fields:
+        if field not in user_data or not user_data[field]:
+            raise ValueError(f"Missing required field: {field}")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Hash the password
+        password_hash = hash_password(user_data['password'])
+
+        cursor.execute('''
+            INSERT INTO users (username, email, password_hash, role)
+            VALUES (?, ?, ?, ?)
+        ''', (
+            user_data['username'],
+            user_data['email'],
+            password_hash,
+            user_data.get('role', 'user')
+        ))
+
+        user_id = cursor.lastrowid
+        conn.commit()
+        return user_id
+
+    except sqlite3.IntegrityError as e:
+        conn.rollback()
+        if 'username' in str(e):
+            raise ValueError("Username already exists")
+        elif 'email' in str(e):
+            raise ValueError("Email already exists")
+        else:
+            raise ValueError("User creation failed")
+    finally:
+        conn.close()
+
+
+def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
+    """
+    Get a user by username.
+
+    Args:
+        username: Username to search for
+
+    Returns:
+        dict: User data if found, None otherwise
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT id, username, email, password_hash, role, is_active, created_at
+        FROM users
+        WHERE username = ?
+    ''', (username,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return {
+            'id': row[0],
+            'username': row[1],
+            'email': row[2],
+            'password_hash': row[3],
+            'role': row[4],
+            'is_active': bool(row[5]),
+            'created_at': row[6]
+        }
+
+    return None
+
+
+def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Get a user by ID.
+
+    Args:
+        user_id: User ID to search for
+
+    Returns:
+        dict: User data if found, None otherwise
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT id, username, email, password_hash, role, is_active, created_at
+        FROM users
+        WHERE id = ?
+    ''', (user_id,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return {
+            'id': row[0],
+            'username': row[1],
+            'email': row[2],
+            'password_hash': row[3],
+            'role': row[4],
+            'is_active': bool(row[5]),
+            'created_at': row[6]
+        }
+
+    return None
+
+
+def get_all_users() -> List[Dict[str, Any]]:
+    """
+    Get all users (without password hashes).
+
+    Returns:
+        List of user dictionaries
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT id, username, email, role, is_active, created_at
+        FROM users
+        ORDER BY created_at DESC
+    ''')
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    users = []
+    for row in rows:
+        users.append({
+            'id': row[0],
+            'username': row[1],
+            'email': row[2],
+            'role': row[3],
+            'is_active': bool(row[4]),
+            'created_at': row[5]
+        })
+
+    return users
+
+
+def update_user(user_id: int, update_data: Dict[str, Any]) -> bool:
+    """
+    Update user information.
+
+    Args:
+        user_id: ID of the user to update
+        update_data: Dictionary with fields to update
+            Allowed: email, role, is_active, password
+
+    Returns:
+        bool: True if update successful, False if user not found
+    """
+    allowed_fields = ['email', 'role', 'is_active', 'password']
+    updates = {}
+
+    for field, value in update_data.items():
+        if field in allowed_fields:
+            if field == 'password':
+                updates['password_hash'] = hash_password(value)
+            else:
+                updates[field] = value
+
+    if not updates:
+        return False
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Build UPDATE query dynamically
+    set_clause = ', '.join([f"{field} = ?" for field in updates.keys()])
+    values = list(updates.values()) + [user_id]
+
+    cursor.execute(f'''
+        UPDATE users
+        SET {set_clause}
+        WHERE id = ?
+    ''', values)
+
+    rows_affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    return rows_affected > 0
+
+
+def delete_user(user_id: int) -> bool:
+    """
+    Delete a user from the database.
+
+    Args:
+        user_id: ID of the user to delete
+
+    Returns:
+        bool: True if deletion successful, False if user not found
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
 
     rows_affected = cursor.rowcount
     conn.commit()
