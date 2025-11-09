@@ -4,9 +4,12 @@
 
 Sistema completo de curación y publicación automatizada de contenidos con inteligencia artificial, interfaz web moderna y aprobación humana.
 
+Para dudas y documentación a fondo, visitad [proyecto-agentes-wiki](https://deepwiki.com/jagl21/proyecto-agentes).
+
 ## 🌟 Características Principales
 
 ### 📱 Aplicación Web (SPA)
+
 - **Single Page Application** con routing client-side (Vanilla JS)
 - **Autenticación JWT** con roles de usuario (admin/viewer)
 - **Panel de Administración** para revisión de contenidos (Human-in-the-Loop)
@@ -15,6 +18,7 @@ Sistema completo de curación y publicación automatizada de contenidos con inte
 - **Dark mode ready** con variables CSS
 
 ### 🤖 Agente IA Autónomo
+
 - **Monitorización de Telegram** en tiempo real con Telethon
 - **Web Scraping inteligente** con Playwright (renderiza JavaScript)
 - **Procesamiento con OpenAI GPT-4** para generar resúmenes
@@ -24,6 +28,7 @@ Sistema completo de curación y publicación automatizada de contenidos con inte
 - **Modos de ejecución**: Real-time (24/7) y Batch (histórico)
 
 ### 🔒 Seguridad
+
 - Autenticación JWT con refresh tokens
 - Hashing de contraseñas con bcrypt
 - CORS configurado
@@ -136,6 +141,7 @@ proyecto-agentes/
 ## 🚀 Instalación Rápida
 
 ### 1. Requisitos Previos
+
 - Python 3.7+
 - Node.js (opcional, para tools de desarrollo)
 - Credenciales de OpenAI API
@@ -168,21 +174,25 @@ El servidor estará en: `http://localhost:5000`
 ### 3. Acceso a la Aplicación
 
 **Página Pública:**
+
 ```
 http://localhost:5000/
 ```
 
 **Login:**
+
 ```
 http://localhost:5000/login
 ```
 
 **Panel Admin (requiere login):**
+
 ```
 http://localhost:5000/admin
 ```
 
 **Credenciales por defecto:**
+
 - Usuario: `admin`
 - Contraseña: `admin123`
 - ⚠️ **CAMBIAR EN PRODUCCIÓN**
@@ -226,6 +236,7 @@ python main.py --batch
 ### Panel de Administración
 
 **Funcionalidades:**
+
 - ✅ Ver todos los posts pendientes con vista previa
 - ✅ Filtrar por estado (pendiente/aprobado/rechazado)
 - ✅ Editar título y resumen antes de aprobar
@@ -237,18 +248,22 @@ python main.py --batch
 ### Modos del Agente
 
 #### Real-Time Mode (Por Defecto) ⭐
+
 ```bash
 python main.py
 ```
+
 - Monitoriza continuamente Telegram
 - Procesa URLs inmediatamente cuando llegan
 - Deduplicación automática
 - Ideal para producción (24/7)
 
 #### Batch Mode
+
 ```bash
 python main.py --batch
 ```
+
 - Procesa historial de mensajes de Telegram
 - Ejecución única (termina después de procesar)
 - Útil para configuración inicial o catch-up
@@ -256,15 +271,18 @@ python main.py --batch
 ## 🔧 API Endpoints
 
 ### Autenticación
+
 - `POST /api/auth/login` - Login con username/password
 - `POST /api/auth/verify` - Verificar token JWT
 
 ### Posts Públicos
+
 - `GET /api/posts` - Obtener posts publicados
 - `GET /api/posts/<id>` - Obtener post específico
 - `POST /api/posts` - Crear post público (admin only)
 
 ### Posts Pendientes (Admin)
+
 - `GET /api/pending-posts` - Listar pendientes
 - `POST /api/pending-posts` - Crear pendiente (agente)
 - `GET /api/pending-posts/<id>` - Obtener específico
@@ -274,6 +292,7 @@ python main.py --batch
 - `DELETE /api/pending-posts/<id>` - Eliminar
 
 ### Usuarios (Admin)
+
 - `GET /api/users` - Listar usuarios
 - `POST /api/users` - Crear usuario
 - `GET /api/users/<id>` - Obtener usuario
@@ -283,6 +302,7 @@ python main.py --batch
 ## 🛠️ Tecnologías Utilizadas
 
 ### Backend
+
 - **Python 3.7+**
 - **Flask 3.0** - Framework web
 - **SQLite3** - Base de datos
@@ -291,12 +311,14 @@ python main.py --batch
 - **flask-cors** - CORS support
 
 ### Frontend
+
 - **HTML5**
 - **CSS3** (Grid, Flexbox, Custom Properties, Animations)
 - **JavaScript ES6+** (Vanilla, Fetch API, Async/Await)
 - **SPA Architecture** con client-side routing
 
 ### Agente IA
+
 - **LangGraph** - Orquestación de workflows
 - **Telethon** - Cliente Telegram MTProto
 - **Playwright** - Browser automation con JavaScript rendering
@@ -307,6 +329,7 @@ python main.py --batch
 ## 📊 Base de Datos
 
 ### Tabla: `users`
+
 ```sql
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -319,6 +342,7 @@ CREATE TABLE users (
 ```
 
 ### Tabla: `posts` (Públicos)
+
 ```sql
 CREATE TABLE posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -334,6 +358,7 @@ CREATE TABLE posts (
 ```
 
 ### Tabla: `pending_posts` (Pendientes de Aprobación)
+
 ```sql
 CREATE TABLE pending_posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -352,6 +377,7 @@ CREATE TABLE pending_posts (
 ## 🔍 Características Técnicas Destacadas
 
 ### Agente IA
+
 - **Pipeline LangGraph** para orquestación compleja
 - **State Management** con SQLite para evitar duplicados
 - **Playwright** con anti-detection (user agents realistas, headers, etc.)
@@ -360,6 +386,7 @@ CREATE TABLE pending_posts (
 - **Rate limiting** (planeado)
 
 ### Web Scraping
+
 - Renderiza JavaScript con Playwright
 - Acepta cookies automáticamente
 - Extrae OpenGraph y Twitter Card metadata
@@ -367,6 +394,7 @@ CREATE TABLE pending_posts (
 - Extracción solo de párrafos (`<p>` tags)
 
 ### Generación de Imágenes
+
 - Valida imágenes de OpenGraph primero
 - Genera con DALL-E 3 si no hay imagen
 - **Descarga y guarda localmente** en `/images/generated/`
@@ -374,6 +402,7 @@ CREATE TABLE pending_posts (
 - Limpieza de títulos (elimina nombres de sitios)
 
 ### Frontend (SPA)
+
 - Router client-side sin dependencias
 - JWT en localStorage con expiración
 - Auto-refresh cada 30 segundos
@@ -384,6 +413,7 @@ CREATE TABLE pending_posts (
 ## 🐛 Solución de Problemas
 
 ### Backend no arranca
+
 ```bash
 # Verificar que el entorno virtual esté activado
 which python  # Debería apuntar a venv/
@@ -393,16 +423,19 @@ pip install -r requirements.txt
 ```
 
 ### Login no funciona
+
 - Verificar que la base de datos exista: `backend/posts.db`
 - Probar credenciales: `admin` / `admin123`
 - Revisar consola del navegador (F12) para errores
 
 ### Agente no procesa URLs
+
 - Verificar `.env` con credenciales correctas
 - Confirmar que Chromium esté instalado: `playwright install chromium`
 - Revisar logs del agente en consola
 
 ### F5 en `/admin` da error 404
+
 - **SOLUCIONADO**: El error handler 404 ahora sirve `index.html` para rutas SPA
 
 ## 📚 Documentación Adicional
@@ -414,6 +447,7 @@ pip install -r requirements.txt
 ## 🚀 Deployment (Producción)
 
 ### Consideraciones
+
 1. **Cambiar credenciales por defecto**
 2. **Usar PostgreSQL** en lugar de SQLite
 3. **Configurar HTTPS** (Nginx + Let's Encrypt)
@@ -426,6 +460,7 @@ pip install -r requirements.txt
 ## 🎯 Roadmap
 
 ### Corto Plazo
+
 - [ ] Tests automatizados (Pytest + Jest)
 - [ ] Logging framework (replace print statements)
 - [ ] Health check endpoints
@@ -433,6 +468,7 @@ pip install -r requirements.txt
 - [ ] Retry logic con exponential backoff
 
 ### Mediano Plazo
+
 - [ ] Búsqueda y filtros avanzados
 - [ ] Notificaciones (Email/Slack) para posts pendientes
 - [ ] Analytics dashboard
@@ -440,6 +476,7 @@ pip install -r requirements.txt
 - [ ] Migración a PostgreSQL
 
 ### Largo Plazo
+
 - [ ] Multi-source support (RSS, Twitter/X, Reddit)
 - [ ] ML-based content quality scoring
 - [ ] Scheduled publishing

@@ -6,6 +6,8 @@
 
 ---
 
+Un mejor reporte técnico está disponible en: [proyecto-agentes-wiki](https://deepwiki.com/jagl21/proyecto-agentes)
+
 ## 1. Resumen Ejecutivo
 
 TL;DR News es una plataforma completa de curación y publicación automatizada de contenidos que integra:
@@ -58,16 +60,19 @@ El agente funciona en dos modos: **real-time** (por defecto) que monitoriza cont
 ### 2.2. Componentes Principales
 
 **Backend:**
+
 - Flask 3.0 (API REST + serving de SPA)
 - SQLite3 (base de datos relacional)
 - JWT + bcrypt (autenticación segura)
 
 **Frontend:**
+
 - SPA con routing client-side (vanilla JavaScript)
 - JWT en localStorage
 - Actualización automática cada 30 segundos
 
 **Agente:**
+
 - LangGraph (orquestación de workflows)
 - Telethon (cliente Telegram MTProto)
 - Playwright + BeautifulSoup (web scraping híbrido)
@@ -96,6 +101,7 @@ graph LR
 ```
 
 **Estado del Grafo (AgentState):**
+
 ```python
 {
     'url': str,                    # URL a procesar
@@ -111,6 +117,7 @@ graph LR
 ### 3.2. Nodos del Pipeline
 
 **1. `scrape_url` (web_scraper.py)**
+
 - **Tecnología:** Playwright (Chromium headless) + BeautifulSoup
 - **Función:** Navegar URL y extraer contenido limpio
 - **Proceso:**
@@ -122,6 +129,7 @@ graph LR
   - Extraer solo párrafos (`<p>` tags) del artículo principal
 
 **2. `process_content` (content_processor.py)**
+
 - **Tecnología:** OpenAI GPT-4
 - **Función:** Generar resumen estructurado
 - **Proceso:**
@@ -132,6 +140,7 @@ graph LR
   - Determinar provider desde domain parsing
 
 **3. `handle_image` (image_handler.py)**
+
 - **Tecnología:** OpenAI DALL-E 3 + requests
 - **Función:** Obtener/generar imagen representativa
 - **Proceso:**
@@ -145,6 +154,7 @@ graph LR
     - Retornar path local: `/images/generated/{uuid}.png`
 
 **4. `create_pending_post` (api_client.py)**
+
 - **Tecnología:** requests HTTP client
 - **Función:** Enviar post a sistema de aprobación
 - **Proceso:**
@@ -156,9 +166,11 @@ graph LR
 ### 3.3. Modos de Ejecución
 
 **Real-Time Mode (Por Defecto):**
+
 ```bash
 python main.py
 ```
+
 - Monitorización continua con eventos de Telethon
 - Procesamiento inmediato cuando llegan nuevos mensajes
 - Deduplicación con SQLite (`agent_state.db`)
@@ -166,9 +178,11 @@ python main.py
 - Ideal para producción (24/7)
 
 **Batch Mode:**
+
 ```bash
 python main.py --batch
 ```
+
 - Recupera historial de mensajes (últimos 100 por defecto)
 - Procesa todas las URLs secuencialmente
 - Ejecución única (termina al finalizar)
@@ -176,6 +190,7 @@ python main.py --batch
 
 **Arquitectura Unificada:**
 Ambos modos invocan el **mismo pipeline LangGraph**. La única diferencia es la fuente de URLs:
+
 - Real-time: `TelegramMonitor.start_realtime_monitoring()` con event handlers
 - Batch: `TelegramMonitor.get_messages_with_urls()` con límite de mensajes
 
@@ -186,6 +201,7 @@ Ambos modos invocan el **mismo pipeline LangGraph**. La única diferencia es la 
 ### 4.1. ¿Por qué LangGraph?
 
 **Alternativas consideradas:**
+
 - Pipeline simple (funciones encadenadas)
 - Celery con tareas asíncronas
 - Custom workflow engine
@@ -193,6 +209,7 @@ Ambos modos invocan el **mismo pipeline LangGraph**. La única diferencia es la 
 **Decisión: LangGraph**
 
 **Ventajas:**
+
 - **Modularidad:** Cada nodo es independiente y testeable
 - **Estado compartido:** `AgentState` pasa datos entre nodos automáticamente
 - **Error handling:** Manejo de errores por nodo con `error_stage`
@@ -203,6 +220,7 @@ Ambos modos invocan el **mismo pipeline LangGraph**. La única diferencia es la 
 ### 4.2. ¿Por qué Playwright + BeautifulSoup?
 
 **Alternativas consideradas:**
+
 - Solo requests + BeautifulSoup (sin JavaScript)
 - Solo Playwright (parsing con selectores CSS)
 - Selenium + BeautifulSoup
@@ -210,11 +228,13 @@ Ambos modos invocan el **mismo pipeline LangGraph**. La única diferencia es la 
 **Decisión: Playwright + BeautifulSoup híbrido**
 
 **Ventajas:**
+
 - **Playwright:** Renderiza JavaScript, maneja SPA modernas, anti-detección robusta
 - **BeautifulSoup:** Parsing HTML más potente y legible que selectores CSS
 - **Best of both worlds:** Navegación moderna + parsing flexible
 
 **Implementación:**
+
 ```python
 html = await page.content()  # Playwright: renderiza JS
 soup = BeautifulSoup(html, 'html.parser')  # BS4: parsea HTML
@@ -225,6 +245,7 @@ soup = BeautifulSoup(html, 'html.parser')  # BS4: parsea HTML
 **Problema inicial:** URLs de DALL-E expiran en 1 hora
 
 **Alternativas consideradas:**
+
 1. Usar URLs directas (temporales)
 2. Almacenar en S3/Cloud Storage
 3. Almacenar localmente en backend/static
@@ -233,12 +254,14 @@ soup = BeautifulSoup(html, 'html.parser')  # BS4: parsea HTML
 **Decisión: Almacenamiento local en `frontend/images/generated/`**
 
 **Ventajas:**
+
 - **Persistencia:** Imágenes disponibles indefinidamente
 - **Performance:** Servidas directamente por Flask sin proxy
 - **Simplicidad:** No requiere configuración de cloud storage
 - **Debugging:** Fácil inspección visual de imágenes generadas
 
 **Implementación:**
+
 ```python
 filename = f"{uuid.uuid4()}.png"
 save_dir = Path(__file__).parent.parent / 'frontend' / 'images' / 'generated'
@@ -249,6 +272,7 @@ return f"/images/generated/{filename}"  # Flask-accessible URL
 ### 4.4. ¿Por qué Real-Time como Modo por Defecto?
 
 **Alternativas consideradas:**
+
 - Batch por defecto, --realtime para monitorización
 - Dos scripts separados (main_batch.py, main_realtime.py)
 - Modo interactivo con menú
@@ -256,6 +280,7 @@ return f"/images/generated/{filename}"  # Flask-accessible URL
 **Decisión: Real-time por defecto, --batch para histórico**
 
 **Ventajas:**
+
 - **UX intuitiva:** Comportamiento esperado es "estar escuchando"
 - **Producción-ready:** Por defecto listo para deployment
 - **Batch como excepción:** Procesamiento histórico es caso especial
@@ -267,12 +292,14 @@ return f"/images/generated/{filename}"  # Flask-accessible URL
 **Decisión: StateManager con SQLite local**
 
 **Ventajas:**
+
 - **Persistente:** Sobrevive reinicios del agente
 - **Rápido:** Index en message_id para lookups O(1)
 - **Simple:** No requiere Redis u otra infraestructura
 - **Auditoria:** Tabla guarda historial completo de procesamiento
 
 **Schema:**
+
 ```sql
 CREATE TABLE processed_messages (
     message_id INTEGER PRIMARY KEY,
@@ -294,6 +321,7 @@ CREATE TABLE processed_messages (
 Los artículos web modernos incluyen mucho ruido: sidebars, menús, ads, popups, comentarios, artículos relacionados. El scraping inicial extraía todo el texto, resultando en resúmenes incoherentes.
 
 **Ejemplo de error:**
+
 ```
 URL: https://www.deia.eus/bizkaia/2025/11/09/enfermedad-huntington-bizkaia...
 GPT-4 responde: "El artículo provisto no contiene información relevante
@@ -305,6 +333,7 @@ San Mamés..."
 **Solución (web_scraper.py:189-240):**
 
 1. **Eliminar elementos HTML no deseados:**
+
 ```python
 for element in soup([
     "script", "style", "nav", "footer", "header",
@@ -316,6 +345,7 @@ for element in soup([
 ```
 
 2. **Eliminar por patrones de clase/id:**
+
 ```python
 patterns = ['sidebar', 'menu', 'nav', 'ad-', 'widget',
             'cookie', 'social', 'share', 'comment', 'related']
@@ -325,6 +355,7 @@ for pattern in patterns:
 ```
 
 3. **Selectores específicos por prioridad:**
+
 ```python
 content_selectors = [
     'article .article-body',      # Más específico
@@ -337,6 +368,7 @@ content_selectors = [
 ```
 
 4. **Extraer solo párrafos (`<p>` tags):**
+
 ```python
 paragraphs = element.find_all('p')
 text = ' '.join(p.get_text(strip=True) for p in paragraphs)
@@ -355,6 +387,7 @@ Títulos como "OpenAI lanza GPT-5 - TechCrunch" generaban prompts con nombres de
 **Solución (image_handler.py:91-126):**
 
 1. **Limpiar títulos antes de generar prompts:**
+
 ```python
 def _clean_title_for_prompt(self, title: str) -> str:
     # Remove common site name patterns
@@ -366,6 +399,7 @@ def _clean_title_for_prompt(self, title: str) -> str:
 ```
 
 2. **Prompt estructurado con guías de estilo:**
+
 ```python
 prompt = (
     f"Professional editorial illustration for news article. "
@@ -384,6 +418,7 @@ prompt = (
 
 **Desafío:**
 Backend rechazaba imágenes guardadas localmente con error:
+
 ```
 "Invalid image_url format (must start with http:// or https://)"
 ```
@@ -392,6 +427,7 @@ Backend rechazaba imágenes guardadas localmente con error:
 Validación en `backend/models.py` solo aceptaba URLs absolutas HTTP(S), no paths relativos.
 
 **Solución (models.py:52-56):**
+
 ```python
 # Allow absolute URLs (http://, https://) or relative paths (starting with /)
 if not (image_url.startswith('http://') or
@@ -411,19 +447,28 @@ Al navegar a `/login`, la URL cambiaba pero la página quedaba en blanco.
 `router.js` se cargaba antes que `login.js`, intentando llamar `renderLoginPage()` antes de que estuviera definida.
 
 **Orden incorrecto:**
+
 ```html
-<script src="js/router.js"></script>     <!-- Se ejecuta primero -->
-<script src="js/login.js"></script>      <!-- Define renderLoginPage después -->
+<script src="js/router.js"></script>
+<!-- Se ejecuta primero -->
+<script src="js/login.js"></script>
+<!-- Define renderLoginPage después -->
 ```
 
 **Solución (index.html:228-233):**
+
 ```html
 <!-- Orden correcto -->
-<script src="js/auth.js"></script>       <!-- 1. Auth primero -->
-<script src="js/app.js"></script>        <!-- 2. Render functions -->
-<script src="js/login.js"></script>      <!-- 3. Render functions -->
-<script src="js/admin.js"></script>      <!-- 4. Render functions -->
-<script src="js/router.js"></script>     <!-- 5. Router último -->
+<script src="js/auth.js"></script>
+<!-- 1. Auth primero -->
+<script src="js/app.js"></script>
+<!-- 2. Render functions -->
+<script src="js/login.js"></script>
+<!-- 3. Render functions -->
+<script src="js/admin.js"></script>
+<!-- 4. Render functions -->
+<script src="js/router.js"></script>
+<!-- 5. Router último -->
 ```
 
 **Lección aprendida:** En SPAs sin bundler, el orden de carga de scripts es crítico.
@@ -432,14 +477,16 @@ Al navegar a `/login`, la URL cambiaba pero la página quedaba en blanco.
 
 **Desafío:**
 Al hacer F5 en `/admin`, Flask retornaba:
+
 ```json
-{"success": false, "error": "Endpoint not found"}
+{ "success": false, "error": "Endpoint not found" }
 ```
 
 **Causa raíz:**
 El error handler 404 siempre retornaba JSON, incluso para rutas del frontend.
 
 **Solución (app.py:404-411):**
+
 ```python
 @app.errorhandler(404)
 def not_found(error):
@@ -457,17 +504,20 @@ def not_found(error):
 ## 6. Métricas y Rendimiento
 
 **Tiempo promedio de procesamiento por URL:**
+
 - Scraping (Playwright): ~3-5 segundos
 - Procesamiento GPT-4: ~2-3 segundos
 - Generación DALL-E (cuando necesario): ~8-12 segundos
 - **Total:** ~15-20 segundos por URL completa
 
 **Tasa de éxito:**
+
 - Scraping exitoso: ~85% (15% bloqueados/timeouts)
 - Generación de resumen: ~98% (2% contenido insuficiente)
 - Obtención de imagen: ~100% (DALL-E como fallback)
 
 **Deduplicación:**
+
 - Mensajes procesados guardados en SQLite
 - Lookup time: < 1ms (indexed by message_id)
 - 0% duplicados desde implementación
@@ -477,18 +527,21 @@ def not_found(error):
 ## 7. Trabajo Futuro
 
 ### Corto Plazo
+
 - [ ] **Tests automatizados** (Pytest para agente, Jest para frontend)
 - [ ] **Logging estructurado** (replace print statements con logging framework)
 - [ ] **Retry logic** con exponential backoff para scraping fallido
 - [ ] **Rate limiting** para APIs (OpenAI tiene límites por minuto)
 
 ### Mediano Plazo
+
 - [ ] **Fact-checking** con nodo adicional en LangGraph
 - [ ] **Categorización automática** (Tecnología, Política, Deportes, etc.)
 - [ ] **Sentiment analysis** del contenido
 - [ ] **Multi-source support** (RSS feeds, Twitter/X, Reddit)
 
 ### Largo Plazo
+
 - [ ] **ML-based quality scoring** para auto-aprobar posts de alta calidad
 - [ ] **Scheduled publishing** (publicar en horarios específicos)
 - [ ] **Multi-idioma** (traducción automática de resúmenes)
