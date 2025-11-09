@@ -188,27 +188,54 @@ class WebScraper:
 
     def _extract_content(self, soup: BeautifulSoup) -> str:
         """Extract main content from page."""
-        # Remove script and style elements
-        for script in soup(["script", "style", "nav", "footer", "header"]):
-            script.decompose()
+        # Remove unwanted elements
+        for element in soup([
+            "script", "style", "nav", "footer", "header",
+            "aside", "iframe", "noscript", "svg",
+            # Common sidebar/widget classes
+            "sidebar", "widget", "advertisement", "ad",
+            "cookie", "modal", "popup", "banner"
+        ]):
+            element.decompose()
 
-        # Try common article containers
-        article = soup.find('article')
-        if article:
-            text = article.get_text(separator=' ', strip=True)
-            return text[:2000]  # Limit to 2000 chars
+        # Also remove by class/id patterns
+        for pattern in ['sidebar', 'menu', 'nav', 'ad-', 'widget', 'cookie', 'social', 'share', 'comment', 'related']:
+            for elem in soup.find_all(class_=lambda x: x and pattern in x.lower()):
+                elem.decompose()
+            for elem in soup.find_all(id=lambda x: x and pattern in x.lower()):
+                elem.decompose()
 
-        # Try main content
-        main = soup.find('main')
-        if main:
-            text = main.get_text(separator=' ', strip=True)
-            return text[:2000]
+        # Try specific content selectors first (more specific = better)
+        content_selectors = [
+            'article .article-body',
+            'article .content',
+            'article .post-content',
+            '.article-content',
+            '.entry-content',
+            '.post-body',
+            'article',
+            'main',
+            '.main-content'
+        ]
 
-        # Fallback to body
+        for selector in content_selectors:
+            element = soup.select_one(selector)
+            if element:
+                # Get paragraphs from the content
+                paragraphs = element.find_all('p')
+                if paragraphs:
+                    text = ' '.join(p.get_text(strip=True) for p in paragraphs)
+                    # Only return if we got substantial text
+                    if len(text) > 100:
+                        return text[:2000]
+
+        # Fallback: try to get just paragraphs from body
         body = soup.find('body')
         if body:
-            text = body.get_text(separator=' ', strip=True)
-            return text[:2000]
+            paragraphs = body.find_all('p')
+            if paragraphs:
+                text = ' '.join(p.get_text(strip=True) for p in paragraphs[:10])  # First 10 paragraphs
+                return text[:2000]
 
         return ""
 
