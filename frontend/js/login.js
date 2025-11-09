@@ -104,6 +104,9 @@ function setupLoginForm() {
                     'success'
                 );
 
+                // Update navigation to show/hide login/logout buttons
+                updateNavigation();
+
                 // Redirect based on role
                 if (result.user.role === 'admin') {
                     navigate('/admin');

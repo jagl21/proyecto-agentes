@@ -151,6 +151,9 @@ async function login(username, password) {
             saveToken(data.token);
             saveUser(data.user);
 
+            // Notify auth change
+            notifyAuthChange();
+
             return { success: true, user: data.user };
         } else {
             return { success: false, error: data.error || 'Login failed' };
@@ -163,10 +166,20 @@ async function login(username, password) {
 }
 
 /**
+ * Notify that authentication state changed
+ */
+function notifyAuthChange() {
+    window.dispatchEvent(new Event('authchange'));
+}
+
+/**
  * Logout user
  */
 function logout() {
     removeToken();
+
+    // Notify auth change
+    notifyAuthChange();
 
     // Redirect to home page
     navigate('/');

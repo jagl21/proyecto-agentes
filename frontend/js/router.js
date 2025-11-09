@@ -105,6 +105,9 @@ async function handleRoute(path) {
 
     // Render the route
     await route.render();
+
+    // Update navigation state (show/hide login/logout/admin buttons)
+    updateNavigation();
 }
 
 /**

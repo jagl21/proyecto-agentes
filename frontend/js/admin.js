@@ -293,7 +293,11 @@ function createAdminPendingPostCard(post) {
         img.className = 'post-image';
         img.src = post.image_url;
         img.alt = post.title;
+        img.onload = () => {
+            console.log('[Admin] Image loaded successfully:', post.image_url);
+        };
         img.onerror = () => {
+            console.error('[Admin] Error loading image:', post.image_url, 'for post:', post.title);
             imageContainer.innerHTML = '<div class="post-image-placeholder">📰</div>';
         };
         imageContainer.appendChild(img);

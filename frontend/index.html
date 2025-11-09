@@ -215,12 +215,6 @@
                 <li id="nav-login-link">
                     <a href="/login" data-link class="nav-link">Login</a>
                 </li>
-                <li id="nav-user-info" style="display: none;">
-                    <div class="nav-user">
-                        <span class="nav-user-name" id="nav-username"></span>
-                        <span class="nav-role-badge" id="nav-role"></span>
-                    </div>
-                </li>
                 <li id="nav-logout-btn" style="display: none;">
                     <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
                 </li>
@@ -263,25 +257,23 @@
         function updateNavigation() {
             const isAuth = isAuthenticated();
             const isAdminUser = isAdmin();
-            const user = getUser();
 
             // Show/hide elements based on auth state
             document.getElementById('nav-login-link').style.display = isAuth ? 'none' : 'block';
-            document.getElementById('nav-user-info').style.display = isAuth ? 'block' : 'none';
             document.getElementById('nav-logout-btn').style.display = isAuth ? 'block' : 'none';
             document.getElementById('nav-admin-link').style.display = isAdminUser ? 'block' : 'none';
-
-            // Update user info
-            if (isAuth && user) {
-                document.getElementById('nav-username').textContent = user.username;
-                document.getElementById('nav-role').textContent = user.role;
-            }
         }
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', () => {
             updateNavigation();
             initRouter();
+        });
+
+        // Listen for authentication changes
+        window.addEventListener('authchange', () => {
+            console.log('[Auth] Authentication state changed, updating navigation');
+            updateNavigation();
         });
     </script>
 </body>
