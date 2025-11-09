@@ -1,11 +1,14 @@
 """
 Image Handler Module
 Validates images and generates new ones with DALL-E if needed.
+Downloads and saves generated images locally.
 """
 
 from openai import OpenAI
 import requests
 from typing import Optional
+from pathlib import Path
+import uuid
 import config
 
 
@@ -49,7 +52,7 @@ class ImageHandler:
             return False
 
     def _generate_image(self, title: str, summary: str) -> Optional[str]:
-        """Generate an image using DALL-E."""
+        """Generate an image using DALL-E and save it locally."""
         try:
             # Create prompt for image generation
             prompt = self._create_image_prompt(title, summary)
@@ -63,12 +66,61 @@ class ImageHandler:
                 n=1
             )
 
-            image_url = response.data[0].url
+            # Get temporary DALL-E URL
+            dalle_url = response.data[0].url
             print(f"✓ Generated image with DALL-E")
-            return image_url
+
+            # Download and save the image locally
+            local_url = self._download_and_save_image(dalle_url)
+
+            if local_url:
+                print(f"✓ Image saved locally: {local_url}")
+                return local_url
+            else:
+                # Fallback to DALL-E URL if download fails
+                print("⚠ Failed to save locally, using DALL-E URL")
+                return dalle_url
 
         except Exception as e:
             print(f"✗ Error generating image: {e}")
+            return None
+
+    def _download_and_save_image(self, image_url: str) -> Optional[str]:
+        """
+        Download image from URL and save locally.
+
+        Args:
+            image_url: URL of the image to download
+
+        Returns:
+            Local URL path (/images/generated/{uuid}.png) or None if failed
+        """
+        try:
+            # Generate unique filename
+            filename = f"{uuid.uuid4()}.png"
+
+            # Path to frontend images directory (relative from agent/ directory)
+            save_dir = Path(__file__).parent.parent / 'frontend' / 'images' / 'generated'
+
+            # Create directory if doesn't exist
+            save_dir.mkdir(parents=True, exist_ok=True)
+
+            # Download image
+            print(f"  Downloading image from DALL-E...")
+            response = requests.get(image_url, timeout=30)
+            response.raise_for_status()
+
+            # Save to file
+            filepath = save_dir / filename
+            filepath.write_bytes(response.content)
+
+            print(f"  Saved to: {filepath}")
+
+            # Return URL path for Flask (not filesystem path)
+            return f"/images/generated/{filename}"
+
+        except Exception as e:
+            print(f"  ✗ Error downloading image: {e}")
             return None
 
     def _create_image_prompt(self, title: str, summary: str) -> str:

@@ -22,6 +22,9 @@ class WebScraper:
         Returns:
             Dict with title, content, image_url, and metadata
         """
+        # Debug logging: show full URL
+        print(f"[Scraper] Full URL to scrape: {url}")
+
         result = {
             'url': url,
             'title': None,
@@ -112,7 +115,12 @@ class WebScraper:
                 await browser.close()
 
                 result['success'] = True
+
+                # Detailed logging for debugging
                 print(f"✓ Scraped: {url[:50]}...")
+                print(f"  Title: {result['title'][:80] if result['title'] else 'None'}...")
+                print(f"  Content length: {len(result['content']) if result['content'] else 0} chars")
+                print(f"  Image URL: {result['image_url'][:60] if result['image_url'] else 'None'}...")
 
         except TimeoutError as e:
             result['error'] = f"Timeout: La página tardó demasiado en cargar ({config.BROWSER_TIMEOUT}ms)"

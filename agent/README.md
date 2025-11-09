@@ -94,33 +94,20 @@ Este script listará TODOS tus grupos y canales con sus IDs. Elige el que quiere
 
 ## Uso
 
-### Modo Batch (ejecución única)
+### Modo Real-Time (monitoreo continuo) ⭐ MODO POR DEFECTO
 
 ```bash
 python main.py
 ```
 
-El agente procesa el historial de mensajes:
-1. Se conecta a Telegram
-2. Extrae URLs de los últimos N mensajes
-3. Navega cada URL con Playwright
-4. Extrae contenido y genera resumen con OpenAI
-5. Obtiene o genera imágenes
-6. Crea posts pendientes en el backend
-7. **Termina la ejecución**
+**Este es el modo recomendado para producción.**
 
-### Modo Real-Time (monitoreo continuo) ⭐ RECOMENDADO
-
-```bash
-python main.py --realtime
-```
-
-El agente escucha nuevos mensajes indefinidamente:
+El agente escucha nuevos mensajes indefinidamente usando **LangGraph**:
 1. Se conecta a Telegram y **se queda escuchando**
 2. Cada vez que llega un **mensaje nuevo** con URLs:
    - Extrae las URLs
-   - Las procesa automáticamente (scraping → IA → imagen → API)
-   - Crea posts pendientes
+   - Las procesa con el pipeline LangGraph (scraping → IA → imagen → API)
+   - Crea posts pendientes en el backend
 3. **Nunca termina** (hasta Ctrl+C)
 
 **Ventajas del modo real-time:**
@@ -128,6 +115,7 @@ El agente escucha nuevos mensajes indefinidamente:
 - ✅ No procesa mensajes duplicados (tracking con SQLite)
 - ✅ Ideal para producción (corre 24/7)
 - ✅ No requiere cron job o ejecución manual
+- ✅ Usa LangGraph para orquestación consistente
 
 **Detener el agente:**
 ```
@@ -136,7 +124,28 @@ Ctrl+C (Windows/Mac/Linux)
 
 El agente mostrará estadísticas al salir:
 - Total de mensajes procesados
-- Exitosos / Fallidos / Saltados
+- Exitosos / Fallidos
+
+### Modo Batch (procesamiento de historial)
+
+```bash
+python main.py --batch
+```
+
+El agente procesa el historial de mensajes **una sola vez** usando **LangGraph**:
+1. Se conecta a Telegram
+2. Extrae URLs de los últimos N mensajes
+3. Para cada URL, ejecuta el pipeline LangGraph (scraping → IA → imagen → API)
+4. Crea posts pendientes en el backend
+5. **Termina la ejecución**
+
+**Cuándo usar el modo batch:**
+- ✅ Primera ejecución del sistema (procesar mensajes existentes)
+- ✅ Recuperación después de downtime (catch-up de mensajes perdidos)
+- ✅ Testing y desarrollo (procesar timeframes específicos)
+- ✅ Curación manual de contenido antiguo
+
+**Nota:** El modo batch **no tiene deduplicación automática**. Si lo ejecutas varias veces sobre el mismo historial, creará posts duplicados.
 
 ### Probar módulos individuales
 
@@ -156,9 +165,55 @@ python api_client.py
 
 ## Flujo del Agente
 
+### Arquitectura Unificada con LangGraph
+
+Ambos modos (real-time y batch) usan el **mismo pipeline LangGraph** para procesar URLs:
+
 ```
-Telegram → URLs → Web Scraping → AI Processing → Image Handling → API → Admin Panel
+┌─────────────────────────────────────────────────────────────────┐
+│                    INGESTA DE URLs                               │
+│  ┌────────────────────┐          ┌────────────────────┐         │
+│  │  Modo Real-Time    │          │  Modo Batch        │         │
+│  │  (por defecto)     │          │  (--batch)         │         │
+│  │                    │          │                    │         │
+│  │  Telegram Events   │          │  Telegram History  │         │
+│  │  (nuevos mensajes) │          │  (últimos N msgs)  │         │
+│  └────────┬───────────┘          └────────┬───────────┘         │
+│           │                               │                      │
+│           └───────────────┬───────────────┘                      │
+│                           ↓                                      │
+│                    [ URL extraída ]                              │
+└───────────────────────────┬──────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│              PIPELINE LANGGRAPH (unificado)                      │
+│                                                                  │
+│   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐   │
+│   │ scrape_url   │ →   │ process_     │ →   │ handle_image │   │
+│   │              │     │ content      │     │              │   │
+│   │ (Playwright) │     │ (OpenAI GPT) │     │ (DALL-E)     │   │
+│   └──────────────┘     └──────────────┘     └──────────────┘   │
+│                                                    ↓             │
+│                                          ┌──────────────┐       │
+│                                          │ create_      │       │
+│                                          │ pending_post │       │
+│                                          │ (API call)   │       │
+│                                          └──────────────┘       │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+                    [ Post pendiente creado ]
+                            ↓
+                  [ Admin Panel para revisión ]
 ```
+
+**Diferencias entre modos:**
+- **Real-time**: Procesa cada URL inmediatamente cuando llega (event-driven)
+- **Batch**: Procesa todas las URLs históricas secuencialmente (loop)
+
+**Pipeline compartido (LangGraph):**
+- Mismo código para ambos modos
+- Manejo de errores consistente
+- Fácil de mantener y testear
 
 ## Configuración Avanzada
 

@@ -69,8 +69,11 @@ class Post:
         # Validate image_url if provided
         if 'image_url' in data and data['image_url']:
             image_url = data['image_url']
-            if not image_url.startswith('http://') and not image_url.startswith('https://'):
-                return False, "Invalid image_url format (must start with http:// or https://)"
+            # Allow absolute URLs (http://, https://) or relative paths (starting with /)
+            if not (image_url.startswith('http://') or
+                    image_url.startswith('https://') or
+                    image_url.startswith('/')):
+                return False, "Invalid image_url format (must be absolute URL or relative path)"
 
         return True, ""
 
