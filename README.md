@@ -1,541 +1,459 @@
-# News Portal - Aplicación Web de Noticias con Agente IA
+# 🤖 TL;DR News - AI-Powered News Curation Platform
 
-Sistema completo de curación y publicación automatizada de contenidos con inteligencia artificial.
+> Too Long; Didn't Read? El bot lo leyó por ti.
 
-## Características
+Sistema completo de curación y publicación automatizada de contenidos con inteligencia artificial, interfaz web moderna y aprobación humana.
 
-### Aplicación Web
-- **Backend REST API** con Flask y SQLite
-- **Frontend responsive** con diseño moderno tipo tarjetas
+## 🌟 Características Principales
+
+### 📱 Aplicación Web (SPA)
+- **Single Page Application** con routing client-side (Vanilla JS)
+- **Autenticación JWT** con roles de usuario (admin/viewer)
 - **Panel de Administración** para revisión de contenidos (Human-in-the-Loop)
-- **Actualización automática** de contenido cada 30 segundos
-- **Validación de datos** en el backend
-- **Manejo de errores** robusto
-- **Diseño mobile-first** totalmente responsive
+- **Diseño responsive** moderno tipo tarjetas
+- **Actualización en tiempo real** cada 30 segundos
+- **Dark mode ready** con variables CSS
 
-### Agente IA (Nuevo)
-- **Monitorización de Telegram** para extraer URLs automáticamente
-- **Web Scraping con Playwright** (JavaScript rendering)
+### 🤖 Agente IA Autónomo
+- **Monitorización de Telegram** en tiempo real con Telethon
+- **Web Scraping inteligente** con Playwright (renderiza JavaScript)
 - **Procesamiento con OpenAI GPT-4** para generar resúmenes
-- **Generación de imágenes con DALL-E 3** si no hay imagen disponible
-- **Flujo orquestado con LangGraph** para procesamiento complejo
-- **Human-in-the-Loop** antes de publicación final
-
-## Estructura del Proyecto
-
-```
-proyecto-agentes/
-├── backend/
-│   ├── app.py              # Servidor Flask y endpoints API (actualizado)
-│   ├── database.py         # Gestión de BD SQLite (posts + pending_posts)
-│   ├── models.py           # Modelos y validación de datos
-│   └── requirements.txt    # Dependencias Python
-├── frontend/
-│   ├── index.html          # Página pública de noticias
-│   ├── admin.html          # Panel de administración (NUEVO)
-│   ├── css/
-│   │   ├── styles.css      # Estilos página pública
-│   │   └── admin.css       # Estilos panel admin (NUEVO)
-│   └── js/
-│       ├── app.js          # Lógica página pública
-│       └── admin.js        # Lógica panel admin (NUEVO)
-├── agent/                  # Agente IA (NUEVO)
-│   ├── main.py             # Script principal del agente
-│   ├── config.py           # Configuración
-│   ├── graph.py            # Orquestación con LangGraph
-│   ├── telegram_monitor.py # Monitorización de Telegram
-│   ├── web_scraper.py      # Scraping con Playwright
-│   ├── content_processor.py # Procesamiento con OpenAI
-│   ├── image_handler.py    # Gestión de imágenes
-│   ├── api_client.py       # Cliente HTTP para Flask API
-│   ├── requirements.txt    # Dependencias del agente
-│   ├── .env.example        # Template de configuración
-│   └── README.md           # Documentación del agente
-├── .gitignore
-├── claude.md               # Documentación completa del proyecto
-└── README.md               # Este archivo
-```
-
-## Requisitos Previos
-
-- Python 3.7 o superior
-- pip (gestor de paquetes de Python)
-- Un navegador web moderno
-
-## Instalación
-
-### 1. Clonar o descargar el proyecto
-
-```bash
-cd proyecto-agentes
-```
-
-### 2. Configurar el Backend
-
-#### En Windows:
-
-```bash
-# Navegar a la carpeta backend
-cd backend
-
-# Crear entorno virtual
-python -m venv venv
-
-# Activar entorno virtual
-venv\Scripts\activate
-
-# Instalar dependencias
-pip install -r requirements.txt
-```
-
-#### En Linux/Mac:
-
-```bash
-# Navegar a la carpeta backend
-cd backend
-
-# Crear entorno virtual
-python3 -m venv venv
-
-# Activar entorno virtual
-source venv/bin/activate
-
-# Instalar dependencias
-pip install -r requirements.txt
-```
-
-## Uso
-
-### Iniciar el Backend
-
-1. Asegúrate de estar en la carpeta `backend` con el entorno virtual activado
-2. Ejecuta el servidor:
-
-```bash
-python app.py
-```
-
-El servidor estará disponible en: `http://localhost:5000`
-
-**Salida esperada:**
-```
-Starting Posts API Server...
-Server running on http://localhost:5000
-API endpoints available at http://localhost:5000/api/posts
-Database initialized successfully
- * Running on http://0.0.0.0:5000
-```
-
-### Abrir el Frontend
-
-1. Navega a la carpeta `frontend`
-2. Abre el archivo `index.html` en tu navegador web
-
-**Opciones para abrir:**
-- Doble clic en `index.html`
-- Desde el terminal: `start frontend/index.html` (Windows) o `open frontend/index.html` (Mac)
-- Usar un servidor web local (recomendado para desarrollo):
-  ```bash
-  # Con Python
-  cd frontend
-  python -m http.server 8000
-  ```
-  Luego visita: `http://localhost:8000`
-
-## API Endpoints
-
-### 1. Obtener todas las noticias
-
-```http
-GET http://localhost:5000/api/posts
-```
-
-**Respuesta exitosa (200):**
-```json
-{
-  "success": true,
-  "count": 2,
-  "data": [
-    {
-      "id": 1,
-      "title": "Título de la noticia",
-      "summary": "Resumen de la noticia...",
-      "source_url": "https://example.com/article",
-      "image_url": "https://example.com/image.jpg",
-      "release_date": "2024-01-15",
-      "provider": "CNN",
-      "type": "Tecnología",
-      "created_at": "2024-01-15 10:30:00"
-    }
-  ]
-}
-```
-
-### 2. Obtener una noticia específica
-
-```http
-GET http://localhost:5000/api/posts/1
-```
-
-**Respuesta exitosa (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "title": "Título de la noticia",
-    ...
-  }
-}
-```
-
-**Noticia no encontrada (404):**
-```json
-{
-  "success": false,
-  "error": "Post with ID 1 not found"
-}
-```
-
-### 3. Crear una nueva noticia
-
-```http
-POST http://localhost:5000/api/posts
-Content-Type: application/json
-```
-
-**Body (JSON):**
-```json
-{
-  "title": "Nueva noticia importante",
-  "summary": "Este es un resumen de la noticia que describe brevemente su contenido.",
-  "source_url": "https://example.com/news/article-123",
-  "release_date": "2024-01-15",
-  "image_url": "https://example.com/images/news.jpg",
-  "provider": "BBC News",
-  "type": "Internacional"
-}
-```
-
-**Campos obligatorios:**
-- `title` (string, max 500 caracteres)
-- `summary` (string, max 2000 caracteres)
-- `source_url` (string, debe comenzar con http:// o https://)
-- `release_date` (string, formato fecha)
-
-**Campos opcionales:**
-- `image_url` (string, debe comenzar con http:// o https://)
-- `provider` (string)
-- `type` (string)
-
-**Respuesta exitosa (201):**
-```json
-{
-  "success": true,
-  "message": "Post created successfully",
-  "data": {
-    "id": 3,
-    "title": "Nueva noticia importante",
-    ...
-  }
-}
-```
-
-**Error de validación (400):**
-```json
-{
-  "success": false,
-  "error": "Missing required field: title"
-}
-```
-
-## Probar la API
-
-### Usando curl (Terminal)
-
-**Crear una noticia:**
-```bash
-curl -X POST http://localhost:5000/api/posts \
-  -H "Content-Type: application/json" \
-  -d "{\"title\":\"Avances en IA\",\"summary\":\"Nuevos desarrollos en inteligencia artificial...\",\"source_url\":\"https://example.com\",\"release_date\":\"2024-01-15\",\"provider\":\"Tech News\",\"type\":\"Tecnología\"}"
-```
-
-**Obtener todas las noticias:**
-```bash
-curl http://localhost:5000/api/posts
-```
-
-### Usando Python
-
-```python
-import requests
-import json
-
-# URL base
-BASE_URL = "http://localhost:5000/api/posts"
-
-# Crear una noticia
-new_post = {
-    "title": "Título de prueba",
-    "summary": "Este es un resumen de prueba.",
-    "source_url": "https://example.com/article",
-    "release_date": "2024-01-15",
-    "image_url": "https://example.com/image.jpg",
-    "provider": "Test Provider",
-    "type": "Prueba"
-}
-
-response = requests.post(BASE_URL, json=new_post)
-print(json.dumps(response.json(), indent=2))
-
-# Obtener todas las noticias
-response = requests.get(BASE_URL)
-print(json.dumps(response.json(), indent=2))
-```
-
-## Características del Frontend
-
-- **Diseño responsive:** Se adapta a móviles, tablets y escritorio
-- **Tarjetas interactivas:** Efecto hover y animaciones suaves
-- **Actualización automática:** Refresca el contenido cada 30 segundos
-- **Manejo de errores:** Muestra mensajes claros y botón de reintento
-- **Estado vacío:** Mensaje amigable cuando no hay noticias
-- **Imágenes con fallback:** Placeholder cuando la imagen no carga
-- **Enlaces externos seguros:** Abre artículos en nueva pestaña con rel="noopener"
-
-## Base de Datos
-
-La base de datos SQLite (`posts.db`) se crea automáticamente al iniciar el servidor por primera vez.
-
-**Esquema de la tabla `posts`:**
-
-| Campo | Tipo | Restricciones |
-|-------|------|---------------|
-| id | INTEGER | PRIMARY KEY, AUTOINCREMENT |
-| title | TEXT | NOT NULL |
-| summary | TEXT | NOT NULL |
-| source_url | TEXT | NOT NULL |
-| image_url | TEXT | NULL |
-| release_date | TEXT | NOT NULL |
-| provider | TEXT | NULL |
-| type | TEXT | NULL |
-| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP |
-
-## Desarrollo
-
-### Desactivar el entorno virtual
-
-```bash
-deactivate
-```
-
-### Limpiar la base de datos
-
-Para empezar de cero, simplemente elimina el archivo `posts.db` en la carpeta `backend`:
-
-```bash
-rm backend/posts.db  # Linux/Mac
-del backend\posts.db  # Windows
-```
-
-## Solución de Problemas
-
-### Error: "ModuleNotFoundError: No module named 'flask'"
-
-**Solución:** Asegúrate de haber activado el entorno virtual y ejecutado `pip install -r requirements.txt`
-
-### Error: "CORS policy" en el navegador
-
-**Solución:** Verifica que el servidor Flask esté corriendo y que `flask-cors` esté instalado.
-
-### La página no muestra noticias
-
-**Solución:**
-1. Verifica que el servidor backend esté corriendo en `http://localhost:5000`
-2. Abre la consola del navegador (F12) para ver errores
-3. Prueba el endpoint directamente: `http://localhost:5000/api/posts`
-
-### Error: "Address already in use"
-
-**Solución:** El puerto 5000 ya está en uso. Puedes:
-1. Detener el proceso que usa el puerto
-2. Cambiar el puerto en `app.py` (línea final: `app.run(port=XXXX)`)
-
-## Tecnologías Utilizadas
-
-**Backend:**
-- Python 3
-- Flask (Framework web)
-- flask-cors (CORS support)
-- SQLite3 (Base de datos)
-
-**Frontend:**
-- HTML5
-- CSS3 (Grid, Flexbox, Animaciones)
-- JavaScript (ES6+, Fetch API)
-
-## Agente IA de Curación de Contenidos
-
-### ¿Qué hace el agente?
-
-El agente IA automatiza completamente el proceso de curación de contenidos:
-
-1. **Monitoriza Telegram** - Se conecta a un grupo/canal y extrae URLs
-2. **Navega las URLs** - Usa Playwright para cargar páginas con JavaScript
-3. **Extrae contenido** - Obtiene título, contenido, imágenes y metadatos
-4. **Genera resúmenes** - Usa GPT-4 para crear resúmenes de 2-3 líneas
-5. **Maneja imágenes** - Extrae OpenGraph o genera con DALL-E 3
-6. **Crea posts pendientes** - Envía al backend para revisión humana
-
-### Instalación del Agente
-
-Ver documentación completa en [`agent/README.md`](agent/README.md)
-
-**Resumen rápido:**
-
-```bash
-cd agent
-python -m venv venv
-venv\Scripts\activate  # Windows
-pip install -r requirements.txt
-playwright install chromium
-
-# Configurar .env con credenciales
-cp .env.example .env
-# Editar .env con tus API keys
-```
-
-### Configuración Necesaria
-
-El agente requiere:
-
-- **OpenAI API Key** (https://platform.openai.com/api-keys)
-- **Telegram API credentials** (https://my.telegram.org/apps)
-- **Chat ID** del grupo de Telegram a monitorizar
-
-Ver `.env.example` en la carpeta `agent/` para detalles completos.
-
-### Ejecutar el Agente
-
-```bash
-cd agent
-python main.py
-```
-
-El agente procesará automáticamente todos los mensajes del grupo de Telegram y creará posts pendientes de revisión.
-
-### Flujo Completo del Sistema
+- **Generación de imágenes con DALL-E 3** cuando no hay disponibles
+- **Orquestación con LangGraph** para flujos complejos
+- **Deduplicación automática** con SQLite
+- **Modos de ejecución**: Real-time (24/7) y Batch (histórico)
+
+### 🔒 Seguridad
+- Autenticación JWT con refresh tokens
+- Hashing de contraseñas con bcrypt
+- CORS configurado
+- Validación de entrada en backend
+- Sanitización de HTML en frontend
+
+## 🏗️ Arquitectura del Sistema
 
 ```
 ┌─────────────┐
-│  Telegram   │ URLs compartidas en grupo
+│  Telegram   │  📱 Mensajes con URLs
 │   (Grupo)   │
 └──────┬──────┘
        │
        ↓
-┌─────────────────────────────────────┐
-│        AGENTE IA (LangGraph)        │
-│  1. Extraer URLs                    │
-│  2. Scraping (Playwright)           │
-│  3. Procesar contenido (GPT-4)      │
-│  4. Generar/validar imagen (DALL-E) │
-│  5. Crear post pendiente (API)      │
-└──────┬──────────────────────────────┘
-       │
-       ↓
-┌─────────────────────────────────────┐
-│   PANEL DE ADMINISTRACIÓN           │
-│   (http://localhost:5000/admin.html)│
-│   - Ver posts pendientes            │
-│   - Editar título/resumen           │
-│   - Aprobar o rechazar              │
-└──────┬──────────────────────────────┘
-       │ (Aprobar)
-       ↓
-┌─────────────────────────────────────┐
-│   PÁGINA PÚBLICA                    │
-│   (http://localhost:5000)           │
-│   - Mostrar noticias aprobadas      │
-│   - Diseño tipo tarjetas            │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│           AGENTE IA (LangGraph Pipeline)             │
+│                                                       │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐        │
+│  │ Scrape   │ → │ Process  │ → │ Handle   │        │
+│  │ URL      │   │ Content  │   │ Image    │        │
+│  │(Playwrght│   │ (GPT-4)  │   │(DALL-E)  │        │
+│  └──────────┘   └──────────┘   └──────────┘        │
+│                                        ↓             │
+│                              ┌──────────────┐       │
+│                              │ Create       │       │
+│                              │ Pending Post │       │
+│                              │ (API)        │       │
+│                              └──────────────┘       │
+└────────────────────────┬─────────────────────────────┘
+                         │
+                         ↓
+┌────────────────────────────────────────────────────────┐
+│          BACKEND (Flask + SQLite)                      │
+│  ┌──────────────────────────────────────────────┐     │
+│  │  API REST (JWT Auth)                         │     │
+│  │  - /api/auth/* (login, verify)               │     │
+│  │  - /api/posts/* (public posts)               │     │
+│  │  - /api/pending-posts/* (admin)              │     │
+│  │  - /api/users/* (user management)            │     │
+│  └──────────────────────────────────────────────┘     │
+│                                                        │
+│  Database: SQLite                                      │
+│  - users (auth)                                        │
+│  - posts (published)                                   │
+│  - pending_posts (awaiting approval)                   │
+└───────────┬────────────────────────────────────────────┘
+            │
+            ↓
+┌────────────────────────────────────────────────────────┐
+│         FRONTEND (SPA - Vanilla JS)                    │
+│                                                        │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐           │
+│  │  Login   │  │  News    │  │  Admin   │           │
+│  │  Page    │  │  Feed    │  │  Panel   │           │
+│  └──────────┘  └──────────┘  └──────────┘           │
+│                                                        │
+│  Router: Client-side (SPAs)                           │
+│  Auth: JWT stored in localStorage                     │
+└────────────────────────────────────────────────────────┘
 ```
 
-## Panel de Administración
+## 📁 Estructura del Proyecto
 
-El panel de administración (`admin.html`) permite revisar posts antes de publicarlos:
-
-**Características:**
-- Vista previa completa de cada post (título, resumen, imagen, fuente)
-- Filtros por estado (Pendiente, Aprobado, Rechazado)
-- Edición inline de título y resumen
-- Botones de aprobar/rechazar
-- Estadísticas en tiempo real
-- Actualización automática cada 30 segundos
-
-**Acceso:**
 ```
-http://localhost:5000/admin.html
+proyecto-agentes/
+├── backend/
+│   ├── app.py              # Flask server + API routes + SPA serving
+│   ├── auth.py             # JWT authentication
+│   ├── database.py         # SQLite operations (users, posts, pending)
+│   ├── models.py           # Data models and validation
+│   └── requirements.txt    # Python dependencies
+│
+├── frontend/
+│   ├── index.html          # SPA shell
+│   ├── css/
+│   │   ├── styles.css      # Public pages styling
+│   │   ├── admin.css       # Admin panel styling
+│   │   └── login.css       # Login page styling
+│   └── js/
+│       ├── router.js       # Client-side routing
+│       ├── auth.js         # JWT handling
+│       ├── app.js          # News page logic
+│       ├── admin.js        # Admin panel logic
+│       └── login.js        # Login page logic
+│
+├── agent/
+│   ├── src/
+│   │   ├── main.py                # Entry point (real-time/batch modes)
+│   │   ├── graph.py               # LangGraph pipeline
+│   │   ├── telegram_monitor.py   # Telegram integration
+│   │   ├── web_scraper.py         # Playwright + BeautifulSoup
+│   │   ├── content_processor.py  # GPT-4 summarization
+│   │   ├── image_handler.py       # DALL-E image generation
+│   │   ├── api_client.py          # Flask API client
+│   │   ├── state_manager.py       # Deduplication with SQLite
+│   │   └── config.py              # Configuration management
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── README.md
+│
+├── docs/
+│   └── TECHNICAL_REPORT.md  # Technical architecture report
+│
+├── .gitignore
+├── CLAUDE.md                # Complete project context
+└── README.md                # This file
 ```
 
-## API Endpoints (Actualizado)
+## 🚀 Instalación Rápida
+
+### 1. Requisitos Previos
+- Python 3.7+
+- Node.js (opcional, para tools de desarrollo)
+- Credenciales de OpenAI API
+- Credenciales de Telegram API (opcional, para el agente)
+
+### 2. Backend Setup
+
+```bash
+# Navegar a backend
+cd backend
+
+# Crear entorno virtual
+python -m venv venv
+
+# Activar entorno
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Iniciar servidor
+python app.py
+```
+
+El servidor estará en: `http://localhost:5000`
+
+### 3. Acceso a la Aplicación
+
+**Página Pública:**
+```
+http://localhost:5000/
+```
+
+**Login:**
+```
+http://localhost:5000/login
+```
+
+**Panel Admin (requiere login):**
+```
+http://localhost:5000/admin
+```
+
+**Credenciales por defecto:**
+- Usuario: `admin`
+- Contraseña: `admin123`
+- ⚠️ **CAMBIAR EN PRODUCCIÓN**
+
+### 4. Agente IA Setup (Opcional)
+
+Ver documentación completa en [`agent/README.md`](agent/README.md)
+
+```bash
+cd agent
+
+# Crear entorno virtual
+python -m venv venv
+venv\Scripts\activate  # Windows
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Instalar navegador Chromium para Playwright
+playwright install chromium
+
+# Configurar credenciales
+cp .env.example .env
+# Editar .env con tus API keys
+
+# Ejecutar en modo real-time (recomendado)
+python main.py
+
+# O en modo batch (procesar historial)
+python main.py --batch
+```
+
+## 📖 Uso del Sistema
+
+### Flujo de Trabajo Completo
+
+1. **Agente IA** monitoriza Telegram → extrae URLs → procesa contenido → crea posts pendientes
+2. **Admin** revisa posts en `/admin` → edita si necesario → aprueba/rechaza
+3. **Público** ve noticias aprobadas en `/` → diseño tipo feed de noticias
+
+### Panel de Administración
+
+**Funcionalidades:**
+- ✅ Ver todos los posts pendientes con vista previa
+- ✅ Filtrar por estado (pendiente/aprobado/rechazado)
+- ✅ Editar título y resumen antes de aprobar
+- ✅ Aprobar posts (se mueven a página pública)
+- ✅ Rechazar posts (se marcan como rechazados)
+- ✅ Eliminar posts pendientes
+- ✅ Ver estadísticas en tiempo real
+
+### Modos del Agente
+
+#### Real-Time Mode (Por Defecto) ⭐
+```bash
+python main.py
+```
+- Monitoriza continuamente Telegram
+- Procesa URLs inmediatamente cuando llegan
+- Deduplicación automática
+- Ideal para producción (24/7)
+
+#### Batch Mode
+```bash
+python main.py --batch
+```
+- Procesa historial de mensajes de Telegram
+- Ejecución única (termina después de procesar)
+- Útil para configuración inicial o catch-up
+
+## 🔧 API Endpoints
+
+### Autenticación
+- `POST /api/auth/login` - Login con username/password
+- `POST /api/auth/verify` - Verificar token JWT
 
 ### Posts Públicos
 - `GET /api/posts` - Obtener posts publicados
-- `POST /api/posts` - Crear post público directamente
+- `GET /api/posts/<id>` - Obtener post específico
+- `POST /api/posts` - Crear post público (admin only)
 
-### Posts Pendientes (Nuevo)
-- `GET /api/pending-posts` - Listar posts pendientes
-- `POST /api/pending-posts` - Crear post pendiente (usado por agente)
-- `PUT /api/pending-posts/<id>` - Editar post pendiente
+### Posts Pendientes (Admin)
+- `GET /api/pending-posts` - Listar pendientes
+- `POST /api/pending-posts` - Crear pendiente (agente)
+- `GET /api/pending-posts/<id>` - Obtener específico
+- `PUT /api/pending-posts/<id>` - Editar
 - `PUT /api/pending-posts/<id>/approve` - Aprobar y publicar
-- `PUT /api/pending-posts/<id>/reject` - Rechazar post
-- `DELETE /api/pending-posts/<id>` - Eliminar post pendiente
+- `PUT /api/pending-posts/<id>/reject` - Rechazar
+- `DELETE /api/pending-posts/<id>` - Eliminar
 
-Ver `http://localhost:5000/` para lista completa de endpoints.
+### Usuarios (Admin)
+- `GET /api/users` - Listar usuarios
+- `POST /api/users` - Crear usuario
+- `GET /api/users/<id>` - Obtener usuario
+- `PUT /api/users/<id>` - Actualizar usuario
+- `DELETE /api/users/<id>` - Eliminar usuario
 
-## Tecnologías Utilizadas
+## 🛠️ Tecnologías Utilizadas
 
-**Backend:**
-- Python 3.7+
-- Flask 3.0 (Framework web)
-- flask-cors (CORS support)
-- SQLite3 (Base de datos)
+### Backend
+- **Python 3.7+**
+- **Flask 3.0** - Framework web
+- **SQLite3** - Base de datos
+- **bcrypt** - Hashing de contraseñas
+- **PyJWT** - JSON Web Tokens
+- **flask-cors** - CORS support
 
-**Frontend:**
-- HTML5
-- CSS3 (Grid, Flexbox, Animaciones)
-- JavaScript Vanilla (ES6+, Fetch API)
+### Frontend
+- **HTML5**
+- **CSS3** (Grid, Flexbox, Custom Properties, Animations)
+- **JavaScript ES6+** (Vanilla, Fetch API, Async/Await)
+- **SPA Architecture** con client-side routing
 
-**Agente IA:**
-- LangGraph (Orquestación de agentes)
-- Telethon (Cliente Telegram)
-- Playwright (Web scraping con JavaScript)
-- OpenAI API (GPT-4 + DALL-E 3)
-- BeautifulSoup4 (Parsing HTML)
+### Agente IA
+- **LangGraph** - Orquestación de workflows
+- **Telethon** - Cliente Telegram MTProto
+- **Playwright** - Browser automation con JavaScript rendering
+- **OpenAI API** - GPT-4 (summarization) + DALL-E 3 (images)
+- **BeautifulSoup4** - HTML parsing
+- **Requests** - HTTP client
 
-## Documentación Adicional
+## 📊 Base de Datos
 
-- [`claude.md`](claude.md) - Documentación completa del proyecto para Claude
-- [`agent/README.md`](agent/README.md) - Guía completa del agente IA
+### Tabla: `users`
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'viewer',
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-## Mejoras Futuras
+### Tabla: `posts` (Públicos)
+```sql
+CREATE TABLE posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    image_url TEXT,
+    release_date TEXT NOT NULL,
+    provider TEXT,
+    type TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-**Corto plazo:**
-- Autenticación para panel de administración
-- Logs detallados del agente
-- Persistencia de mensajes procesados (evitar duplicados)
-- Notificaciones cuando hay posts pendientes
+### Tabla: `pending_posts` (Pendientes de Aprobación)
+```sql
+CREATE TABLE pending_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    image_url TEXT,
+    release_date TEXT NOT NULL,
+    provider TEXT,
+    type TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-**Largo plazo:**
-- Ejecución automática con cron job
-- Soporte para múltiples fuentes (WhatsApp, RSS, Twitter)
-- Dashboard de estadísticas
-- Machine learning para scoring de calidad
+## 🔍 Características Técnicas Destacadas
 
-## Licencia
+### Agente IA
+- **Pipeline LangGraph** para orquestación compleja
+- **State Management** con SQLite para evitar duplicados
+- **Playwright** con anti-detection (user agents realistas, headers, etc.)
+- **BeautifulSoup** con filtrado avanzado (elimina sidebars, ads, nav)
+- **Retry logic** con exponential backoff (planeado)
+- **Rate limiting** (planeado)
+
+### Web Scraping
+- Renderiza JavaScript con Playwright
+- Acepta cookies automáticamente
+- Extrae OpenGraph y Twitter Card metadata
+- Limpieza inteligente de contenido (elimina ruido)
+- Extracción solo de párrafos (`<p>` tags)
+
+### Generación de Imágenes
+- Valida imágenes de OpenGraph primero
+- Genera con DALL-E 3 si no hay imagen
+- **Descarga y guarda localmente** en `/images/generated/`
+- Prompt optimizado: "Professional editorial illustration..."
+- Limpieza de títulos (elimina nombres de sitios)
+
+### Frontend (SPA)
+- Router client-side sin dependencias
+- JWT en localStorage con expiración
+- Auto-refresh cada 30 segundos
+- Notificaciones visuales (success/error)
+- Modal system para confirmaciones
+- Responsive design (mobile-first)
+
+## 🐛 Solución de Problemas
+
+### Backend no arranca
+```bash
+# Verificar que el entorno virtual esté activado
+which python  # Debería apuntar a venv/
+
+# Reinstalar dependencias
+pip install -r requirements.txt
+```
+
+### Login no funciona
+- Verificar que la base de datos exista: `backend/posts.db`
+- Probar credenciales: `admin` / `admin123`
+- Revisar consola del navegador (F12) para errores
+
+### Agente no procesa URLs
+- Verificar `.env` con credenciales correctas
+- Confirmar que Chromium esté instalado: `playwright install chromium`
+- Revisar logs del agente en consola
+
+### F5 en `/admin` da error 404
+- **SOLUCIONADO**: El error handler 404 ahora sirve `index.html` para rutas SPA
+
+## 📚 Documentación Adicional
+
+- **[TECHNICAL_REPORT.md](docs/TECHNICAL_REPORT.md)** - Informe técnico detallado
+- **[agent/README.md](agent/README.md)** - Guía completa del agente
+- **[CLAUDE.md](CLAUDE.md)** - Contexto completo para Claude
+
+## 🚀 Deployment (Producción)
+
+### Consideraciones
+1. **Cambiar credenciales por defecto**
+2. **Usar PostgreSQL** en lugar de SQLite
+3. **Configurar HTTPS** (Nginx + Let's Encrypt)
+4. **Usar Gunicorn** para servir Flask
+5. **Separar frontend** (Nginx, CDN)
+6. **Implementar logging** estructurado
+7. **Añadir monitoreo** (Sentry, Prometheus)
+8. **Configurar backups** automáticos
+
+## 🎯 Roadmap
+
+### Corto Plazo
+- [ ] Tests automatizados (Pytest + Jest)
+- [ ] Logging framework (replace print statements)
+- [ ] Health check endpoints
+- [ ] Rate limiting para API
+- [ ] Retry logic con exponential backoff
+
+### Mediano Plazo
+- [ ] Búsqueda y filtros avanzados
+- [ ] Notificaciones (Email/Slack) para posts pendientes
+- [ ] Analytics dashboard
+- [ ] Bulk operations (aprobar/rechazar múltiple)
+- [ ] Migración a PostgreSQL
+
+### Largo Plazo
+- [ ] Multi-source support (RSS, Twitter/X, Reddit)
+- [ ] ML-based content quality scoring
+- [ ] Scheduled publishing
+- [ ] Mobile apps (React Native)
+- [ ] Multi-tenant support
+
+## 📝 Licencia
 
 Este proyecto es de código abierto y está disponible para uso educativo.
 
-## Autor
+## 👨‍💻 Autor
 
-Proyecto de agentes IA para curación automatizada de contenidos.
+Proyecto desarrollado como demostración de sistemas de agentes IA con LangGraph.
+
+---
+
+**TL;DR News** - Curado por IA, aprobado por humanos. 🤖✨
