@@ -198,12 +198,13 @@ body {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    cursor: help; /* Indicate there's more info on hover */
+    cursor: pointer; /* Indicate it's clickable */
     transition: var(--transition);
 }
 
 .post-summary:hover {
     color: var(--text-primary);
+    transform: scale(1.01);
 }
 
 .post-meta {
@@ -370,6 +371,151 @@ body {
 
 .hidden {
     display: none !important;
+}
+
+/* ===================================
+   Summary Tooltip (Glassmorphism)
+   =================================== */
+
+/* Overlay background */
+.summary-tooltip-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Glassmorphism card - ALWAYS white background for maximum readability */
+.summary-tooltip-card {
+    background: #ffffff !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 2px solid #cbd5e1;
+    border-radius: 20px;
+    padding: var(--spacing-xl);
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.6),
+        0 10px 40px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.3s ease-out;
+    position: relative;
+}
+
+/* Header with close button */
+.summary-tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 2px solid #cbd5e1;
+}
+
+.summary-tooltip-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a !important;
+    margin: 0;
+    flex: 1;
+    padding-right: var(--spacing-md);
+    line-height: 1.4;
+}
+
+/* Close button */
+.summary-tooltip-close {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1.5px solid rgba(239, 68, 68, 0.3);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #dc2626;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.summary-tooltip-close:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: white;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* Content */
+.summary-tooltip-content {
+    margin-top: var(--spacing-md);
+}
+
+.summary-tooltip-text {
+    color: #1e293b !important;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-weight: 400;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Custom scrollbar for tooltip */
+.summary-tooltip-card::-webkit-scrollbar {
+    width: 10px;
+}
+
+.summary-tooltip-card::-webkit-scrollbar-track {
+    background: #f1f5f9 !important;
+    border-radius: 10px;
+    margin: 8px 0;
+}
+
+.summary-tooltip-card::-webkit-scrollbar-thumb {
+    background: #94a3b8 !important;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.summary-tooltip-card::-webkit-scrollbar-thumb:hover {
+    background: #64748b !important;
+    background-clip: padding-box;
 }
 
 /* ===================================

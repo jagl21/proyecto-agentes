@@ -194,7 +194,12 @@ function createNewsPostCard(post) {
     const summary = document.createElement('p');
     summary.className = 'post-summary';
     summary.textContent = post.summary;
-    summary.title = post.summary; // Show full summary on hover
+
+    // Add click event to show full summary in glassmorphism tooltip
+    summary.addEventListener('click', (e) => {
+        e.preventDefault();
+        showSummaryTooltip(post.title, post.summary);
+    });
 
     // Meta information
     const meta = document.createElement('div');
@@ -352,4 +357,128 @@ function showNewsPostsInfo() {
 function hideNewsPostsInfo() {
     const el = document.getElementById('posts-info');
     if (el) el.classList.add('hidden');
+}
+
+// ============================================
+// Summary Tooltip (Glassmorphism)
+// ============================================
+
+/**
+ * Show summary tooltip with glassmorphism effect
+ * @param {string} title - Post title
+ * @param {string} summary - Full summary text
+ */
+function showSummaryTooltip(title, summary) {
+    // Remove existing tooltip if any
+    const existingTooltip = document.querySelector('.summary-tooltip-overlay');
+    if (existingTooltip) {
+        existingTooltip.remove();
+    }
+
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'summary-tooltip-overlay';
+
+    // Create card
+    const card = document.createElement('div');
+    card.className = 'summary-tooltip-card';
+
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'summary-tooltip-header';
+
+    const titleElement = document.createElement('h3');
+    titleElement.className = 'summary-tooltip-title';
+    titleElement.textContent = title;
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'summary-tooltip-close';
+    closeButton.innerHTML = '×';
+    closeButton.setAttribute('aria-label', 'Cerrar');
+
+    header.appendChild(titleElement);
+    header.appendChild(closeButton);
+
+    // Create content
+    const content = document.createElement('div');
+    content.className = 'summary-tooltip-content';
+
+    const text = document.createElement('p');
+    text.className = 'summary-tooltip-text';
+    text.textContent = summary;
+
+    content.appendChild(text);
+
+    // Assemble card
+    card.appendChild(header);
+    card.appendChild(content);
+    overlay.appendChild(card);
+
+    // Add to DOM
+    document.body.appendChild(overlay);
+
+    // Event listeners
+    // Close on button click
+    closeButton.addEventListener('click', () => {
+        closeSummaryTooltip(overlay);
+    });
+
+    // Close on overlay click (but not on card click)
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            closeSummaryTooltip(overlay);
+        }
+    });
+
+    // Close on Escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            closeSummaryTooltip(overlay);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    // Prevent body scroll when tooltip is open
+    document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Close summary tooltip with animation
+ * @param {HTMLElement} overlay - Tooltip overlay element
+ */
+function closeSummaryTooltip(overlay) {
+    overlay.style.animation = 'fadeOut 0.2s ease-out';
+    const card = overlay.querySelector('.summary-tooltip-card');
+    if (card) {
+        card.style.animation = 'slideDown 0.2s ease-out';
+    }
+
+    setTimeout(() => {
+        overlay.remove();
+        document.body.style.overflow = '';
+    }, 200);
+}
+
+// Add fadeOut animation to CSS if not present
+if (!document.querySelector('#tooltip-animations')) {
+    const style = document.createElement('style');
+    style.id = 'tooltip-animations';
+    style.textContent = `
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+        }
+    `;
+    document.head.appendChild(style);
 }
