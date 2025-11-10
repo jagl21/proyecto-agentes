@@ -8,7 +8,11 @@
       "WebFetch(domain:langchain-ai.github.io)",
       "WebFetch(domain:medium.com)",
       "WebFetch(domain:docs.langchain.com)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(curl:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

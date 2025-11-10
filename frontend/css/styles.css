@@ -198,6 +198,12 @@ body {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    cursor: help; /* Indicate there's more info on hover */
+    transition: var(--transition);
+}
+
+.post-summary:hover {
+    color: var(--text-primary);
 }
 
 .post-meta {

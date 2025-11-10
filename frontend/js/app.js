@@ -194,6 +194,7 @@ function createNewsPostCard(post) {
     const summary = document.createElement('p');
     summary.className = 'post-summary';
     summary.textContent = post.summary;
+    summary.title = post.summary; // Show full summary on hover
 
     // Meta information
     const meta = document.createElement('div');
